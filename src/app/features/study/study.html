@@ -1,0 +1,17 @@
+@if (store.current(); as team) {
+  <p>Restam {{ store.remaining() }} card(s)</p>
+  <app-team-badge [team]="team" />
+
+  @if (!store.revealed()) {
+    <button type="button" data-testid="reveal" (click)="store.reveal()">Mostrar resposta</button>
+  } @else {
+    <h2>{{ team.name }}</h2>
+    <button type="button" (click)="store.grade(0)">Errei</button>
+    <button type="button" (click)="store.grade(3)">Difícil</button>
+    <button type="button" (click)="store.grade(4)">Bom</button>
+    <button type="button" (click)="store.grade(5)">Fácil</button>
+  }
+} @else {
+  <p>Sessão concluída.</p>
+  <a routerLink="/">Voltar</a>
+}
