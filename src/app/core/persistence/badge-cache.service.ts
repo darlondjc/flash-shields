@@ -15,10 +15,18 @@ export class BadgeCacheService {
       return URL.createObjectURL(cached.blob);
     }
 
-    const blob = await firstValueFrom(
-      this.http.get(team.badgeUrl, { responseType: 'blob' }),
-    );
-    await this.db.badgeBlobs.put({ key: team.id, blob });
-    return URL.createObjectURL(blob);
+    try {
+      const blob = await firstValueFrom(
+        this.http.get(team.badgeUrl, { responseType: 'blob' }),
+      );
+      await this.db.badgeBlobs.put({ key: team.id, blob });
+      return URL.createObjectURL(blob);
+    } catch {
+      // Some third-party badge CDNs (e.g. TheSportsDB's) don't send CORS headers, so a
+      // browser-side XHR/fetch blob download is blocked and can never be cached locally.
+      // Fall back to the remote URL directly so the badge still renders; it just won't be
+      // available for offline reuse.
+      return team.badgeUrl;
+    }
   }
 }
