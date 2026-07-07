@@ -1,3 +1,16 @@
 import { Routes } from '@angular/router';
 
-export const routes: Routes = [];
+export const routes: Routes = [
+  {
+    path: '',
+    loadComponent: () => import('./features/home/home').then(m => m.Home),
+  },
+  {
+    path: 'study/:deckId',
+    loadComponent: () => import('./features/study/study').then(m => m.Study),
+  },
+  {
+    path: 'game/:deckId',
+    loadComponent: () => import('./features/game/game').then(m => m.Game),
+  },
+];
