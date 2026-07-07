@@ -1,0 +1,24 @@
+@if (!store.finished()) {
+  <p>Pontos: {{ store.score() }} · Sequência: {{ store.streak() }}</p>
+  @if (store.current(); as question) {
+    <app-team-badge [team]="question.correctTeam" />
+    <div>
+      @for (option of question.options; track option.id) {
+        <button
+          type="button"
+          data-testid="option"
+          [disabled]="!!store.selectedTeamId()"
+          (click)="store.select(option.id)"
+        >
+          {{ option.name }}
+        </button>
+      }
+    </div>
+    @if (store.selectedTeamId()) {
+      <button type="button" (click)="store.next()">Próxima</button>
+    }
+  }
+} @else {
+  <p>Fim de jogo! Pontuação: {{ store.score() }} · Melhor sequência: {{ store.bestStreak() }}</p>
+  <a routerLink="/">Voltar</a>
+}
