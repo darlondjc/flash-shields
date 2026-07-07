@@ -6,7 +6,7 @@
 
 **Architecture:** Standalone Angular components with Signals for local state, a thin `DbService` wrapping a single Dexie (IndexedDB) database for persistence, one `DataSourceAdapter` (TheSportsDB) behind a provider-agnostic interface, and a `BadgeCacheService` that turns remote PNGs into cached Blobs served via `URL.createObjectURL`. No NgRx, no backend.
 
-**Tech Stack:** Angular (latest stable, standalone + Signals), TypeScript strict mode, Dexie.js over IndexedDB, `@angular/pwa` service worker, Jasmine + Karma (Angular's built-in `ng test` runner) for unit/component tests, Playwright for one end-to-end smoke test, `fake-indexeddb` to exercise Dexie code in unit tests.
+**Tech Stack:** Angular 22 (standalone + Signals, no NgModules, no `standalone: true` flag needed — it's implicit), TypeScript strict mode, Dexie.js over IndexedDB, `@angular/pwa` service worker, Vitest via Angular's built-in `ng test`/`@angular/build:unit-test` runner for unit/component tests, Playwright for one end-to-end smoke test, `fake-indexeddb` to exercise Dexie code in unit tests.
 
 ## Global Constraints
 
@@ -20,10 +20,10 @@
 - Shields are downloaded once, converted to `Blob`, and persisted in IndexedDB; the UI always reads from cache, network is fallback only (spec §7).
 - Domain models (`Team`, `League`, `Region`, `Deck`, `ReviewState`) are independent of any API's payload shape — API responses are translated by a `DataSourceAdapter` (spec §2, §3).
 - SM-2 quality is one of `0 | 3 | 4 | 5` (Errei/Difícil/Bom/Fácil) (spec §4).
+- This project is **zoneless** (no `zone.js` dependency, confirmed in Task 1's scaffold and `package.json`). Never add `provideZoneChangeDetection`/`zone.js` polyfills. `fakeAsync`/`tick()` (from `@angular/core/testing`) do not work without zone.js — do not use them in specs; use real `await`/`setTimeout(0)` or `fixture.whenStable()` instead.
 
 **Deviations from the spec's suggested stack (and why):**
-- **Test runner: Jasmine/Karma (`ng test`) instead of Jest/Vitest.** The spec says "Jest/Vitest" (either is acceptable). Jasmine/Karma is Angular CLI's zero-config default, so every command in this plan is guaranteed to work regardless of exact Angular CLI version. Swapping to Vitest later is a tooling-only change; it doesn't touch app code.
-- **No `features/decks/` screen in the MVP.** The spec's full folder tree lists `decks/` as always present, but the MVP only needs one deck per imported league, auto-created on import. `HomeComponent` doubles as the deck list. Custom deck CRUD is Fase 2 scope ("Decks por país e região").
+- **No `features/decks/` screen in the MVP.** The spec's full folder tree lists `decks/` as always present, but the MVP only needs one deck per imported league, auto-created on import. `Home` doubles as the deck list. Custom deck CRUD is Fase 2 scope ("Decks por país e região").
 - **No HTTP retry/throttle interceptor.** Import is a single manual button click; on failure the user just clicks again. Formal interceptors are deferred until Fase 2/3 introduce more API traffic.
 - **No `Region`/`Session` persistence in the MVP.** Region browsing is Fase 2 ("filtro em cascata"). Session history/stats are Fase 2 ("Tela de estatísticas"). Score/streak for the MVP's multiple-choice mode live only in component state for the duration of the round.
 
@@ -62,23 +62,23 @@ flash-shields/
           srs.service.ts
       features/
         home/
-          home.component.ts
-          home.component.html
+          home.ts
+          home.html
         study/
           study.store.ts
-          study.component.ts
-          study.component.html
+          study.ts
+          study.html
         game/
           game.util.ts
           game.store.ts
-          game.component.ts
-          game.component.html
+          game.ts
+          game.html
       shared/
         ui/
-          team-badge.component.ts
+          team-badge.ts
       app.routes.ts
       app.config.ts
-      app.component.ts
+      app.ts
   e2e/
     mvp-flow.spec.ts
 ```
@@ -88,7 +88,7 @@ flash-shields/
 ### Task 1: Bootstrap the Angular project and base tooling
 
 **Files:**
-- Create: entire generated Angular workspace (`angular.json`, `package.json`, `tsconfig*.json`, `src/main.ts`, `src/app/app.component.ts`, etc.)
+- Create: entire generated Angular workspace (`angular.json`, `package.json`, `tsconfig*.json`, `src/main.ts`, `src/app/app.ts`, etc.)
 - Create: `src/environments/environment.ts`, `src/environments/environment.development.ts`
 
 **Interfaces:**
@@ -111,7 +111,7 @@ rmdir /tmp/flash-shields-scaffold
 - [ ] **Step 2: Verify the default project builds and tests pass**
 
 Run: `npm test -- --watch=false`
-Expected: the generated `app.component.spec.ts` suite passes (green).
+Expected: the generated `app.spec.ts` suite passes (green).
 
 Run: `npx ng build`
 Expected: build succeeds with no errors.
@@ -801,7 +801,7 @@ git commit -m "feat: add TheSportsDB adapter"
 
 **Interfaces:**
 - Consumes: `DbService.badgeBlobs` from Task 5, `Team` from Task 2.
-- Produces: `BadgeCacheService.getObjectUrl(team: Team): Promise<string>` — consumed by Task 12 (`TeamBadgeComponent`).
+- Produces: `BadgeCacheService.getObjectUrl(team: Team): Promise<string>` — consumed by Task 12 (`TeamBadge`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -924,7 +924,7 @@ git commit -m "feat: add BadgeCacheService for offline shield blobs"
 
 **Interfaces:**
 - Consumes: `ImportedTeam` from Task 6, `DbService` from Task 5, `League` from Task 2.
-- Produces: `LeagueImportConfig`, `MVP_LEAGUES_TO_IMPORT`, `mapImportedTeamToTeam(imported, leagueId): Team`, `ImportService.importLeague(config): Promise<League>`, `ImportService.progress: Signal<{done, total} | null>` — consumed by Task 9 (`DeckService`) and Task 14 (`HomeComponent`).
+- Produces: `LeagueImportConfig`, `MVP_LEAGUES_TO_IMPORT`, `mapImportedTeamToTeam(imported, leagueId): Team`, `ImportService.importLeague(config): Promise<League>`, `ImportService.progress: Signal<{done, total} | null>` — consumed by Task 9 (`DeckService`) and Task 14 (`Home`).
 
 - [ ] **Step 1: Write the failing test for the pure mapper**
 
@@ -1009,6 +1009,7 @@ export const MVP_LEAGUES_TO_IMPORT: LeagueImportConfig[] = [
 `src/app/core/data/import.service.spec.ts`:
 ```typescript
 import 'fake-indexeddb/auto';
+import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { ImportService } from './import.service';
 import { DbService } from '../persistence/db.service';
@@ -1018,7 +1019,7 @@ import { LeagueImportConfig } from './league-import.config';
 describe('ImportService', () => {
   let service: ImportService;
   let db: DbService;
-  let adapterSpy: jasmine.SpyObj<TheSportsDbAdapter>;
+  let adapterSpy: { fetchTeamsForLeague: ReturnType<typeof vi.fn> };
 
   const config: LeagueImportConfig = {
     externalId: '4328',
@@ -1028,7 +1029,7 @@ describe('ImportService', () => {
   };
 
   beforeEach(async () => {
-    adapterSpy = jasmine.createSpyObj('TheSportsDbAdapter', ['fetchTeamsForLeague']);
+    adapterSpy = { fetchTeamsForLeague: vi.fn() };
     TestBed.configureTestingModule({
       providers: [{ provide: TheSportsDbAdapter, useValue: adapterSpy }],
     });
@@ -1039,7 +1040,7 @@ describe('ImportService', () => {
   });
 
   it('creates the league and upserts its teams', async () => {
-    adapterSpy.fetchTeamsForLeague.and.resolveTo([
+    adapterSpy.fetchTeamsForLeague.mockResolvedValue([
       {
         externalId: '1',
         name: 'Arsenal',
@@ -1059,7 +1060,7 @@ describe('ImportService', () => {
   });
 
   it('is idempotent: re-importing does not duplicate teams', async () => {
-    adapterSpy.fetchTeamsForLeague.and.resolveTo([
+    adapterSpy.fetchTeamsForLeague.mockResolvedValue([
       {
         externalId: '1',
         name: 'Arsenal',
@@ -1148,7 +1149,7 @@ git commit -m "feat: add ImportService with idempotent league/team upsert"
 
 **Interfaces:**
 - Consumes: `DbService` from Task 5, `League` from Task 2.
-- Produces: `DeckService.createLeagueDeck(league: League): Promise<Deck>`, `DeckService.listDecks(): Promise<Deck[]>`, `DeckService.getDeck(id: string): Promise<Deck | undefined>` — consumed by Task 11 (`StudyStore`), Task 13 (`GameStore`), Task 14 (`HomeComponent`).
+- Produces: `DeckService.createLeagueDeck(league: League): Promise<Deck>`, `DeckService.listDecks(): Promise<Deck[]>`, `DeckService.getDeck(id: string): Promise<Deck | undefined>` — consumed by Task 11 (`StudyStore`), Task 13 (`GameStore`), Task 14 (`Home`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1469,11 +1470,11 @@ git commit -m "feat: add SrsService with daily queue building and grading"
 
 ---
 
-### Task 11: Shared TeamBadgeComponent
+### Task 11: Shared TeamBadge
 
 **Files:**
-- Create: `src/app/shared/ui/team-badge.component.ts`
-- Test: `src/app/shared/ui/team-badge.component.spec.ts`
+- Create: `src/app/shared/ui/team-badge.ts`
+- Test: `src/app/shared/ui/team-badge.spec.ts`
 
 **Interfaces:**
 - Consumes: `BadgeCacheService` from Task 7, `Team` from Task 2.
@@ -1481,16 +1482,17 @@ git commit -m "feat: add SrsService with daily queue building and grading"
 
 - [ ] **Step 1: Write the failing test**
 
-`src/app/shared/ui/team-badge.component.spec.ts`:
+`src/app/shared/ui/team-badge.spec.ts`:
 ```typescript
+import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { TeamBadgeComponent } from './team-badge.component';
+import { TeamBadge } from './team-badge';
 import { BadgeCacheService } from '../../core/persistence/badge-cache.service';
 import { Team } from '../../core/models/team.model';
 
-describe('TeamBadgeComponent', () => {
-  let fixture: ComponentFixture<TeamBadgeComponent>;
-  let badgeCacheSpy: jasmine.SpyObj<BadgeCacheService>;
+describe('TeamBadge', () => {
+  let fixture: ComponentFixture<TeamBadge>;
+  let badgeCacheSpy: { getObjectUrl: ReturnType<typeof vi.fn> };
 
   const team: Team = {
     id: 'ts-1',
@@ -1502,15 +1504,14 @@ describe('TeamBadgeComponent', () => {
     badgeUrl: 'https://example.com/arsenal.png',
   };
 
-  beforeEach(() => {
-    badgeCacheSpy = jasmine.createSpyObj('BadgeCacheService', ['getObjectUrl']);
-    badgeCacheSpy.getObjectUrl.and.resolveTo('blob:fake-url');
+  beforeEach(async () => {
+    badgeCacheSpy = { getObjectUrl: vi.fn().mockResolvedValue('blob:fake-url') };
 
-    TestBed.configureTestingModule({
-      imports: [TeamBadgeComponent],
+    await TestBed.configureTestingModule({
+      imports: [TeamBadge],
       providers: [{ provide: BadgeCacheService, useValue: badgeCacheSpy }],
-    });
-    fixture = TestBed.createComponent(TeamBadgeComponent);
+    }).compileComponents();
+    fixture = TestBed.createComponent(TeamBadge);
     fixture.componentRef.setInput('team', team);
   });
 
@@ -1528,12 +1529,12 @@ describe('TeamBadgeComponent', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- --watch=false --include='**/team-badge.component.spec.ts'`
-Expected: FAIL — `team-badge.component` module not found.
+Run: `npm test -- --watch=false --include='**/team-badge.spec.ts'`
+Expected: FAIL — `team-badge` module not found.
 
 - [ ] **Step 3: Write the implementation**
 
-`src/app/shared/ui/team-badge.component.ts`:
+`src/app/shared/ui/team-badge.ts`:
 ```typescript
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { BadgeCacheService } from '../../core/persistence/badge-cache.service';
@@ -1541,7 +1542,6 @@ import { Team } from '../../core/models/team.model';
 
 @Component({
   selector: 'app-team-badge',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (imageUrl(); as url) {
@@ -1551,7 +1551,7 @@ import { Team } from '../../core/models/team.model';
     }
   `,
 })
-export class TeamBadgeComponent {
+export class TeamBadge {
   private badgeCache = inject(BadgeCacheService);
   readonly team = input.required<Team>();
   readonly imageUrl = signal<string | null>(null);
@@ -1568,14 +1568,14 @@ export class TeamBadgeComponent {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npm test -- --watch=false --include='**/team-badge.component.spec.ts'`
+Run: `npm test -- --watch=false --include='**/team-badge.spec.ts'`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add src/app/shared
-git commit -m "feat: add TeamBadgeComponent with cached-blob loading"
+git commit -m "feat: add TeamBadge with cached-blob loading"
 ```
 
 ---
@@ -1584,19 +1584,20 @@ git commit -m "feat: add TeamBadgeComponent with cached-blob loading"
 
 **Files:**
 - Create: `src/app/features/study/study.store.ts`
-- Create: `src/app/features/study/study.component.ts`
-- Create: `src/app/features/study/study.component.html`
+- Create: `src/app/features/study/study.ts`
+- Create: `src/app/features/study/study.html`
 - Test: `src/app/features/study/study.store.spec.ts`
-- Test: `src/app/features/study/study.component.spec.ts`
+- Test: `src/app/features/study/study.spec.ts`
 
 **Interfaces:**
-- Consumes: `SrsService` from Task 10, `TeamBadgeComponent` from Task 11.
+- Consumes: `SrsService` from Task 10, `TeamBadge` from Task 11.
 - Produces: `StudyStore` (`deckId`, `queue`, `current`, `remaining`, `revealed` signals; `load`, `reveal`, `grade` methods), `<app-study>` routed component — consumed by Task 15 (routes).
 
 - [ ] **Step 1: Write the failing test for the store**
 
 `src/app/features/study/study.store.spec.ts`:
 ```typescript
+import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { StudyStore } from './study.store';
 import { SrsService } from '../../core/srs/srs.service';
@@ -1616,16 +1617,16 @@ function makeTeam(id: string): Team {
 
 describe('StudyStore', () => {
   let store: StudyStore;
-  let srsSpy: jasmine.SpyObj<SrsService>;
+  let srsSpy: { buildDailyQueue: ReturnType<typeof vi.fn>; grade: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    srsSpy = jasmine.createSpyObj('SrsService', ['buildDailyQueue', 'grade']);
+    srsSpy = { buildDailyQueue: vi.fn(), grade: vi.fn() };
     TestBed.configureTestingModule({ providers: [{ provide: SrsService, useValue: srsSpy }] });
     store = TestBed.inject(StudyStore);
   });
 
   it('loads the daily queue for a deck', async () => {
-    srsSpy.buildDailyQueue.and.resolveTo([makeTeam('ts-1'), makeTeam('ts-2')]);
+    srsSpy.buildDailyQueue.mockResolvedValue([makeTeam('ts-1'), makeTeam('ts-2')]);
     await store.load('deck-1');
     expect(store.current()?.id).toBe('ts-1');
     expect(store.remaining()).toBe(2);
@@ -1633,15 +1634,15 @@ describe('StudyStore', () => {
   });
 
   it('reveal() flips the revealed flag', async () => {
-    srsSpy.buildDailyQueue.and.resolveTo([makeTeam('ts-1')]);
+    srsSpy.buildDailyQueue.mockResolvedValue([makeTeam('ts-1')]);
     await store.load('deck-1');
     store.reveal();
     expect(store.revealed()).toBe(true);
   });
 
   it('grade() advances the queue and resets revealed', async () => {
-    srsSpy.buildDailyQueue.and.resolveTo([makeTeam('ts-1'), makeTeam('ts-2')]);
-    srsSpy.grade.and.resolveTo();
+    srsSpy.buildDailyQueue.mockResolvedValue([makeTeam('ts-1'), makeTeam('ts-2')]);
+    srsSpy.grade.mockResolvedValue(undefined);
     await store.load('deck-1');
     store.reveal();
 
@@ -1705,10 +1706,11 @@ Expected: PASS
 
 - [ ] **Step 5: Write the failing test for the component**
 
-`src/app/features/study/study.component.spec.ts`:
+`src/app/features/study/study.spec.ts`:
 ```typescript
+import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { StudyComponent } from './study.component';
+import { Study } from './study';
 import { StudyStore } from './study.store';
 import { signal } from '@angular/core';
 import { Team } from '../../core/models/team.model';
@@ -1725,23 +1727,32 @@ function makeTeam(id: string): Team {
   };
 }
 
-describe('StudyComponent', () => {
-  let fixture: ComponentFixture<StudyComponent>;
-  let storeSpy: jasmine.SpyObj<StudyStore>;
+describe('Study', () => {
+  let fixture: ComponentFixture<Study>;
+  let storeSpy: {
+    load: ReturnType<typeof vi.fn>;
+    reveal: ReturnType<typeof vi.fn>;
+    grade: ReturnType<typeof vi.fn>;
+    current: ReturnType<typeof signal<Team | null>>;
+    remaining: ReturnType<typeof signal<number>>;
+    revealed: ReturnType<typeof signal<boolean>>;
+  };
 
-  beforeEach(() => {
-    storeSpy = jasmine.createSpyObj('StudyStore', ['load', 'reveal', 'grade'], {
+  beforeEach(async () => {
+    storeSpy = {
+      load: vi.fn().mockResolvedValue(undefined),
+      reveal: vi.fn(),
+      grade: vi.fn(),
       current: signal(makeTeam('ts-1')),
       remaining: signal(1),
       revealed: signal(false),
-    });
-    storeSpy.load.and.resolveTo();
+    };
 
-    TestBed.configureTestingModule({
-      imports: [StudyComponent],
+    await TestBed.configureTestingModule({
+      imports: [Study],
       providers: [{ provide: StudyStore, useValue: storeSpy }],
-    });
-    fixture = TestBed.createComponent(StudyComponent);
+    }).compileComponents();
+    fixture = TestBed.createComponent(Study);
     fixture.componentRef.setInput('deckId', 'deck-1');
   });
 
@@ -1757,7 +1768,6 @@ describe('StudyComponent', () => {
     expect(revealButton).toBeTruthy();
 
     revealButton.click();
-    storeSpy.reveal.and.callFake(() => {});
     expect(storeSpy.reveal).toHaveBeenCalled();
   });
 });
@@ -1765,12 +1775,12 @@ describe('StudyComponent', () => {
 
 - [ ] **Step 6: Run component test to verify it fails**
 
-Run: `npm test -- --watch=false --include='**/study.component.spec.ts'`
-Expected: FAIL — `study.component` module not found.
+Run: `npm test -- --watch=false --include='**/study.spec.ts'`
+Expected: FAIL — `study` module not found.
 
 - [ ] **Step 7: Write the component implementation**
 
-`src/app/features/study/study.component.html`:
+`src/app/features/study/study.html`:
 ```html
 @if (store.current(); as team) {
   <p>Restam {{ store.remaining() }} card(s)</p>
@@ -1791,21 +1801,20 @@ Expected: FAIL — `study.component` module not found.
 }
 ```
 
-`src/app/features/study/study.component.ts`:
+`src/app/features/study/study.ts`:
 ```typescript
 import { ChangeDetectionStrategy, Component, inject, input, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { StudyStore } from './study.store';
-import { TeamBadgeComponent } from '../../shared/ui/team-badge.component';
+import { TeamBadge } from '../../shared/ui/team-badge';
 
 @Component({
   selector: 'app-study',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TeamBadgeComponent],
-  templateUrl: './study.component.html',
+  imports: [RouterLink, TeamBadge],
+  templateUrl: './study.html',
 })
-export class StudyComponent {
+export class Study {
   readonly store = inject(StudyStore);
   readonly deckId = input.required<string>();
 
@@ -1819,7 +1828,7 @@ export class StudyComponent {
 
 - [ ] **Step 8: Run component test to verify it passes**
 
-Run: `npm test -- --watch=false --include='**/study.component.spec.ts'`
+Run: `npm test -- --watch=false --include='**/study.spec.ts'`
 Expected: PASS
 
 - [ ] **Step 9: Commit**
@@ -1836,14 +1845,14 @@ git commit -m "feat: add Study feature with SRS grading UI"
 **Files:**
 - Create: `src/app/features/game/game.util.ts`
 - Create: `src/app/features/game/game.store.ts`
-- Create: `src/app/features/game/game.component.ts`
-- Create: `src/app/features/game/game.component.html`
+- Create: `src/app/features/game/game.ts`
+- Create: `src/app/features/game/game.html`
 - Test: `src/app/features/game/game.util.spec.ts`
 - Test: `src/app/features/game/game.store.spec.ts`
-- Test: `src/app/features/game/game.component.spec.ts`
+- Test: `src/app/features/game/game.spec.ts`
 
 **Interfaces:**
-- Consumes: `shuffle`, `pickRandom` from Task 3, `DeckService` from Task 9, `DbService` from Task 5, `TeamBadgeComponent` from Task 11.
+- Consumes: `shuffle`, `pickRandom` from Task 3, `DeckService` from Task 9, `DbService` from Task 5, `TeamBadge` from Task 11.
 - Produces: `buildMultipleChoiceQuestions(teams, roundSize): MultipleChoiceQuestion[]`, `GameStore` (`questions`, `current`, `finished`, `score`, `streak`, `bestStreak`, `selectedTeamId` signals; `load`, `select`, `next` methods), `<app-game>` routed component — consumed by Task 15 (routes).
 
 - [ ] **Step 1: Write the failing test for question building**
@@ -1937,6 +1946,7 @@ Expected: PASS
 `src/app/features/game/game.store.spec.ts`:
 ```typescript
 import 'fake-indexeddb/auto';
+import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { GameStore } from './game.store';
 import { DeckService } from '../../core/decks/deck.service';
@@ -1959,7 +1969,7 @@ function makeTeam(id: string): Team {
 describe('GameStore', () => {
   let store: GameStore;
   let db: DbService;
-  let deckServiceSpy: jasmine.SpyObj<DeckService>;
+  let deckServiceSpy: { getDeck: ReturnType<typeof vi.fn> };
 
   const deck: Deck = {
     id: 'deck-1',
@@ -1970,8 +1980,7 @@ describe('GameStore', () => {
   };
 
   beforeEach(async () => {
-    deckServiceSpy = jasmine.createSpyObj('DeckService', ['getDeck']);
-    deckServiceSpy.getDeck.and.resolveTo(deck);
+    deckServiceSpy = { getDeck: vi.fn().mockResolvedValue(deck) };
 
     TestBed.configureTestingModule({ providers: [{ provide: DeckService, useValue: deckServiceSpy }] });
     store = TestBed.inject(GameStore);
@@ -2093,13 +2102,15 @@ Expected: PASS
 
 - [ ] **Step 9: Write the failing test for the component**
 
-`src/app/features/game/game.component.spec.ts`:
+`src/app/features/game/game.spec.ts`:
 ```typescript
+import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { GameComponent } from './game.component';
+import { Game } from './game';
 import { GameStore } from './game.store';
 import { Team } from '../../core/models/team.model';
+import { MultipleChoiceQuestion } from './game.util';
 
 function makeTeam(id: string): Team {
   return {
@@ -2113,28 +2124,40 @@ function makeTeam(id: string): Team {
   };
 }
 
-describe('GameComponent', () => {
-  let fixture: ComponentFixture<GameComponent>;
-  let storeSpy: jasmine.SpyObj<GameStore>;
+describe('Game', () => {
+  let fixture: ComponentFixture<Game>;
+  let storeSpy: {
+    load: ReturnType<typeof vi.fn>;
+    select: ReturnType<typeof vi.fn>;
+    next: ReturnType<typeof vi.fn>;
+    current: ReturnType<typeof signal<MultipleChoiceQuestion | null>>;
+    finished: ReturnType<typeof signal<boolean>>;
+    score: ReturnType<typeof signal<number>>;
+    streak: ReturnType<typeof signal<number>>;
+    bestStreak: ReturnType<typeof signal<number>>;
+    selectedTeamId: ReturnType<typeof signal<string | null>>;
+  };
   const correctTeam = makeTeam('ts-1');
   const options = [correctTeam, makeTeam('ts-2'), makeTeam('ts-3'), makeTeam('ts-4')];
 
-  beforeEach(() => {
-    storeSpy = jasmine.createSpyObj('GameStore', ['load', 'select', 'next'], {
+  beforeEach(async () => {
+    storeSpy = {
+      load: vi.fn().mockResolvedValue(undefined),
+      select: vi.fn(),
+      next: vi.fn(),
       current: signal({ correctTeam, options }),
       finished: signal(false),
       score: signal(0),
       streak: signal(0),
       bestStreak: signal(0),
       selectedTeamId: signal<string | null>(null),
-    });
-    storeSpy.load.and.resolveTo();
+    };
 
-    TestBed.configureTestingModule({
-      imports: [GameComponent],
+    await TestBed.configureTestingModule({
+      imports: [Game],
       providers: [{ provide: GameStore, useValue: storeSpy }],
-    });
-    fixture = TestBed.createComponent(GameComponent);
+    }).compileComponents();
+    fixture = TestBed.createComponent(Game);
     fixture.componentRef.setInput('deckId', 'deck-1');
   });
 
@@ -2159,12 +2182,12 @@ describe('GameComponent', () => {
 
 - [ ] **Step 10: Run test to verify it fails**
 
-Run: `npm test -- --watch=false --include='**/game.component.spec.ts'`
-Expected: FAIL — `game.component` module not found.
+Run: `npm test -- --watch=false --include='**/game.spec.ts'`
+Expected: FAIL — `game` module not found.
 
 - [ ] **Step 11: Write the component implementation**
 
-`src/app/features/game/game.component.html`:
+`src/app/features/game/game.html`:
 ```html
 @if (!store.finished()) {
   <p>Pontos: {{ store.score() }} · Sequência: {{ store.streak() }}</p>
@@ -2192,21 +2215,20 @@ Expected: FAIL — `game.component` module not found.
 }
 ```
 
-`src/app/features/game/game.component.ts`:
+`src/app/features/game/game.ts`:
 ```typescript
 import { ChangeDetectionStrategy, Component, inject, input, effect } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { GameStore } from './game.store';
-import { TeamBadgeComponent } from '../../shared/ui/team-badge.component';
+import { TeamBadge } from '../../shared/ui/team-badge';
 
 @Component({
   selector: 'app-game',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TeamBadgeComponent],
-  templateUrl: './game.component.html',
+  imports: [RouterLink, TeamBadge],
+  templateUrl: './game.html',
 })
-export class GameComponent {
+export class Game {
   readonly store = inject(GameStore);
   readonly deckId = input.required<string>();
 
@@ -2220,7 +2242,7 @@ export class GameComponent {
 
 - [ ] **Step 12: Run test to verify it passes**
 
-Run: `npm test -- --watch=false --include='**/game.component.spec.ts'`
+Run: `npm test -- --watch=false --include='**/game.spec.ts'`
 Expected: PASS
 
 - [ ] **Step 13: Commit**
@@ -2235,9 +2257,9 @@ git commit -m "feat: add multiple-choice Game feature"
 ### Task 14: Home feature (deck list + import trigger)
 
 **Files:**
-- Create: `src/app/features/home/home.component.ts`
-- Create: `src/app/features/home/home.component.html`
-- Test: `src/app/features/home/home.component.spec.ts`
+- Create: `src/app/features/home/home.ts`
+- Create: `src/app/features/home/home.html`
+- Test: `src/app/features/home/home.spec.ts`
 
 **Interfaces:**
 - Consumes: `ImportService` from Task 8, `DeckService` from Task 9, `MVP_LEAGUES_TO_IMPORT` from Task 8.
@@ -2245,20 +2267,21 @@ git commit -m "feat: add multiple-choice Game feature"
 
 - [ ] **Step 1: Write the failing test**
 
-`src/app/features/home/home.component.spec.ts`:
+`src/app/features/home/home.spec.ts`:
 ```typescript
+import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { HomeComponent } from './home.component';
+import { Home } from './home';
 import { ImportService } from '../../core/data/import.service';
 import { DeckService } from '../../core/decks/deck.service';
 import { League } from '../../core/models/league.model';
 
-describe('HomeComponent', () => {
-  let fixture: ComponentFixture<HomeComponent>;
-  let importSpy: jasmine.SpyObj<ImportService>;
-  let deckServiceSpy: jasmine.SpyObj<DeckService>;
+describe('Home', () => {
+  let fixture: ComponentFixture<Home>;
+  let importSpy: { importLeague: ReturnType<typeof vi.fn>; progress: ReturnType<typeof signal> };
+  let deckServiceSpy: { listDecks: ReturnType<typeof vi.fn>; createLeagueDeck: ReturnType<typeof vi.fn> };
 
   const league: League = {
     id: 'ts-4328',
@@ -2269,20 +2292,19 @@ describe('HomeComponent', () => {
     sport: 'soccer',
   };
 
-  beforeEach(() => {
-    importSpy = jasmine.createSpyObj('ImportService', ['importLeague'], { progress: signal(null) });
-    deckServiceSpy = jasmine.createSpyObj('DeckService', ['listDecks', 'createLeagueDeck']);
-    deckServiceSpy.listDecks.and.resolveTo([]);
+  beforeEach(async () => {
+    importSpy = { importLeague: vi.fn(), progress: signal(null) };
+    deckServiceSpy = { listDecks: vi.fn().mockResolvedValue([]), createLeagueDeck: vi.fn() };
 
-    TestBed.configureTestingModule({
-      imports: [HomeComponent],
+    await TestBed.configureTestingModule({
+      imports: [Home],
       providers: [
         provideRouter([]),
         { provide: ImportService, useValue: importSpy },
         { provide: DeckService, useValue: deckServiceSpy },
       ],
-    });
-    fixture = TestBed.createComponent(HomeComponent);
+    }).compileComponents();
+    fixture = TestBed.createComponent(Home);
   });
 
   it('lists the configured leagues with an import button when no deck exists yet', async () => {
@@ -2296,14 +2318,22 @@ describe('HomeComponent', () => {
   });
 
   it('importing a league creates its deck and shows study/game links', async () => {
-    importSpy.importLeague.and.resolveTo(league);
-    deckServiceSpy.createLeagueDeck.and.resolveTo({
+    const newDeck = {
       id: 'deck-league-ts-4328',
       name: 'Premier League',
-      scope: { kind: 'league', leagueId: 'ts-4328' },
+      scope: { kind: 'league' as const, leagueId: 'ts-4328' },
       teamIds: ['ts-1'],
       createdAt: new Date().toISOString(),
-    });
+    };
+    importSpy.importLeague.mockResolvedValue(league);
+    deckServiceSpy.createLeagueDeck.mockResolvedValue(newDeck);
+    // The component's constructor (which calls refreshDecks() -> listDecks()) already ran
+    // when `fixture = TestBed.createComponent(Home)` executed in beforeEach, above, using the
+    // default mockResolvedValue([]) — that call is already spent. The only listDecks() call
+    // still pending at this point is the one inside refreshDecks() after import completes, so
+    // a single mockResolvedValueOnce covers it; the default mockResolvedValue([]) still backs
+    // the earlier (already-consumed) constructor call.
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
 
     fixture.detectChanges();
     await fixture.whenStable();
@@ -2324,12 +2354,12 @@ describe('HomeComponent', () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npm test -- --watch=false --include='**/home.component.spec.ts'`
-Expected: FAIL — `home.component` module not found.
+Run: `npm test -- --watch=false --include='**/home.spec.ts'`
+Expected: FAIL — `home` module not found.
 
 - [ ] **Step 3: Write the implementation**
 
-`src/app/features/home/home.component.html`:
+`src/app/features/home/home.html`:
 ```html
 <h1>Flash Shields</h1>
 
@@ -2364,7 +2394,7 @@ Expected: FAIL — `home.component` module not found.
 </ul>
 ```
 
-`src/app/features/home/home.component.ts`:
+`src/app/features/home/home.ts`:
 ```typescript
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -2375,12 +2405,11 @@ import { Deck } from '../../core/models/deck.model';
 
 @Component({
   selector: 'app-home',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
-  templateUrl: './home.component.html',
+  templateUrl: './home.html',
 })
-export class HomeComponent {
+export class Home {
   private importService = inject(ImportService);
   private deckService = inject(DeckService);
 
@@ -2421,7 +2450,7 @@ export class HomeComponent {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npm test -- --watch=false --include='**/home.component.spec.ts'`
+Run: `npm test -- --watch=false --include='**/home.spec.ts'`
 Expected: PASS
 
 - [ ] **Step 5: Commit**
@@ -2438,12 +2467,13 @@ git commit -m "feat: add Home feature with league import and deck list"
 **Files:**
 - Modify: `src/app/app.routes.ts`
 - Modify: `src/app/app.config.ts`
-- Modify: `src/app/app.component.ts`
-- Modify: `src/app/app.component.html`
+- Modify: `src/app/app.ts`
+- Modify: `src/app/app.html`
+- Modify: `src/app/app.spec.ts`
 - Test: `src/app/app.routes.spec.ts`
 
 **Interfaces:**
-- Consumes: `HomeComponent`, `StudyComponent`, `GameComponent`.
+- Consumes: `Home`, `Study`, `Game`.
 - Produces: a navigable, lazy-routed shell — the last piece needed for the MVP's user flow.
 
 - [ ] **Step 1: Write the failing test**
@@ -2474,15 +2504,15 @@ import { Routes } from '@angular/router';
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent),
+    loadComponent: () => import('./features/home/home').then(m => m.Home),
   },
   {
     path: 'study/:deckId',
-    loadComponent: () => import('./features/study/study.component').then(m => m.StudyComponent),
+    loadComponent: () => import('./features/study/study').then(m => m.Study),
   },
   {
     path: 'game/:deckId',
-    loadComponent: () => import('./features/game/game.component').then(m => m.GameComponent),
+    loadComponent: () => import('./features/game/game').then(m => m.Game),
   },
 ];
 ```
@@ -2494,27 +2524,45 @@ Expected: PASS
 
 - [ ] **Step 5: Wire component input binding and HttpClient in app.config.ts**
 
+This project's Task-1 scaffold is **zoneless** — it has no `zone.js` dependency and no `provideZoneChangeDetection`/`provideExperimentalZonelessChangeDetection` call at all; zoneless is simply the implicit default when zone.js isn't installed. The existing `src/app/app.config.ts` from Task 1 looks like this:
+
+```typescript
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { provideRouter } from '@angular/router';
+
+import { routes } from './app.routes';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideBrowserGlobalErrorListeners(),
+    provideRouter(routes)
+  ]
+};
+```
+
+Keep `provideBrowserGlobalErrorListeners()` as-is and only change the `provideRouter(...)` call and add `provideHttpClient()`:
+
 `src/app/app.config.ts`:
 ```typescript
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }),
+    provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(),
   ],
 };
 ```
 
-(Keep any additional providers the CLI already generated here, e.g. `provideAnimationsAsync()` — this task only adds `withComponentInputBinding()` and `provideHttpClient()`. `withComponentInputBinding()` is what makes `StudyComponent.deckId` / `GameComponent.deckId` auto-populate from the `:deckId` route param — see Tasks 12–13.)
+(Keep any additional providers the CLI already generated here — this task only adds `withComponentInputBinding()` and `provideHttpClient()`. `withComponentInputBinding()` is what makes `Study.deckId` / `Game.deckId` auto-populate from the `:deckId` route param — see Tasks 12–13. Do not add `provideZoneChangeDetection` or any zone.js-based provider — this app has no zone.js dependency; Signals-driven change detection already works zoneless.)
 
 - [ ] **Step 6: Write the app shell template**
 
-`src/app/app.component.html`:
+`src/app/app.html`:
 ```html
 <nav>
   <a routerLink="/">Flash Shields</a>
@@ -2522,27 +2570,59 @@ export const appConfig: ApplicationConfig = {
 <router-outlet />
 ```
 
-`src/app/app.component.ts`:
+`src/app/app.ts`:
 ```typescript
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, RouterOutlet],
-  templateUrl: './app.component.html',
+  templateUrl: './app.html',
 })
-export class AppComponent {}
+export class App {}
 ```
 
-- [ ] **Step 7: Run the full unit test suite to confirm nothing broke**
+- [ ] **Step 7: Update the default app spec for the new shell**
+
+The `app.spec.ts` generated in Task 1 asserts on the scaffold's default `<h1>Hello, flash-shields</h1>`, which Step 6 just removed — replace it so it exercises the real shell instead:
+
+`src/app/app.spec.ts`:
+```typescript
+import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { App } from './app';
+import { routes } from './app.routes';
+
+describe('App', () => {
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [provideRouter(routes)],
+    }).compileComponents();
+  });
+
+  it('creates the app shell', () => {
+    const fixture = TestBed.createComponent(App);
+    expect(fixture.componentInstance).toBeTruthy();
+  });
+
+  it('renders the nav bar', () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    const nav: HTMLElement = fixture.nativeElement.querySelector('nav');
+    expect(nav?.textContent).toContain('Flash Shields');
+  });
+});
+```
+
+- [ ] **Step 8: Run the full unit test suite to confirm nothing broke**
 
 Run: `npm test -- --watch=false`
-Expected: PASS — every spec from Tasks 3–15 is green, including the default `app.component.spec.ts` generated in Task 1.
+Expected: PASS — every spec from Tasks 3–15 is green, including the rewritten `app.spec.ts`.
 
-- [ ] **Step 8: Manual smoke test of the full flow**
+- [ ] **Step 9: Manual smoke test of the full flow**
 
 ```bash
 npx ng serve
@@ -2550,10 +2630,10 @@ npx ng serve
 
 Open `http://localhost:4200`, click "Importar Premier League", wait for the progress counter to finish, then click "Estudar" and "Jogar" and confirm both flows render shields and respond to input.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
-git add src/app/app.routes.ts src/app/app.routes.spec.ts src/app/app.config.ts src/app/app.component.ts src/app/app.component.html
+git add src/app/app.routes.ts src/app/app.routes.spec.ts src/app/app.config.ts src/app/app.ts src/app/app.html src/app/app.spec.ts
 git commit -m "feat: wire routes, HttpClient, and component input binding"
 ```
 
@@ -2673,7 +2753,7 @@ test('import a league, study one card, and play one round', async ({ page }) => 
 });
 ```
 
-Update `home.component.html` (from Task 14) to add `data-testid="import"` per-button if not already unique — it already is, since only one league is configured for the MVP.
+Update `home.html` (from Task 14) to add `data-testid="import"` per-button if not already unique — it already is, since only one league is configured for the MVP.
 
 - [ ] **Step 3: Run the test to verify it fails**
 
@@ -2699,5 +2779,7 @@ git commit -m "test: add Playwright E2E smoke test for the MVP flow"
 - `npm test -- --watch=false` passes with all unit/component specs from Tasks 3–15.
 - `npx playwright test` passes the end-to-end flow from Task 17.
 - `npx ng build --configuration production` succeeds and emits `ngsw-worker.js`.
-- Manually verified offline reload (Task 16, Step 5) keeps the imported deck and its shields usable.
+- Manually verified offline reload (Task 16, Step 5) keeps the imported deck's **team/league/deck/ReviewState data** usable offline.
 - Every spec §9 MVP bullet is covered: Premier League import + badge cache (Tasks 6–8), deck per league (Task 9), Study/SM-2 (Tasks 4, 10, 12), Multiple choice (Task 13), offline básico (Task 16).
+
+**Known accepted limitation (decided during Task 17, human sign-off):** TheSportsDB's badge image CDN (`r2.thesportsdb.com`) sends no CORS headers, so `BadgeCacheService`'s blob download is blocked by the browser in real use (only visible via Task 17's unmocked E2E test — the mocked unit tests never exercise real CORS enforcement). The fix falls back to rendering the badge via a plain `<img src>` pointed at the remote URL, which works whenever the device is online, but that badge is never persisted to IndexedDB — so **badge images specifically do not work offline** for this MVP. All other data (teams, leagues, decks, `ReviewState`/SRS progress, scores) remains fully offline per spec §7, since that data comes from JSON API responses (which the CDN's image host doesn't gate) and is written to IndexedDB directly, unaffected by this issue. A Service-Worker-level opaque-cache (`ngsw-config.json` `dataGroups`) could restore true offline badges without violating the "no backend" constraint, but was deliberately deferred past the MVP rather than expanding Task 17's scope.
