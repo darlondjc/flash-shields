@@ -18,6 +18,16 @@ describe('TeamBadge', () => {
     badgeUrl: 'https://example.com/arsenal.png',
   };
 
+  const otherTeam: Team = {
+    id: 'ts-2',
+    externalIds: {},
+    name: 'Chelsea',
+    alternateNames: [],
+    country: 'England',
+    leagueIds: [],
+    badgeUrl: 'https://example.com/chelsea.png',
+  };
+
   beforeEach(async () => {
     badgeCacheSpy = { getObjectUrl: vi.fn().mockResolvedValue('blob:fake-url') };
 
@@ -37,5 +47,29 @@ describe('TeamBadge', () => {
     const img: HTMLImageElement = fixture.nativeElement.querySelector('img');
     expect(img.src).toContain('blob:fake-url');
     expect(img.alt).toBe('Arsenal');
+  });
+
+  it('revokes the previous object URL when the team input changes', async () => {
+    badgeCacheSpy.getObjectUrl
+      .mockReset()
+      .mockResolvedValueOnce('blob:team-1-url')
+      .mockResolvedValueOnce('blob:team-2-url');
+    const revokeSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(revokeSpy).not.toHaveBeenCalled();
+
+    fixture.componentRef.setInput('team', otherTeam);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(revokeSpy).toHaveBeenCalledWith('blob:team-1-url');
+
+    const img: HTMLImageElement = fixture.nativeElement.querySelector('img');
+    expect(img.src).toContain('blob:team-2-url');
   });
 });

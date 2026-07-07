@@ -19,10 +19,25 @@ export class TeamBadge {
   readonly imageUrl = signal<string | null>(null);
 
   constructor() {
-    effect(() => {
+    effect(onCleanup => {
       const currentTeam = this.team();
       this.imageUrl.set(null);
-      this.badgeCache.getObjectUrl(currentTeam).then(url => this.imageUrl.set(url));
+      let cancelled = false;
+      let objectUrl: string | null = null;
+      this.badgeCache.getObjectUrl(currentTeam).then(url => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        objectUrl = url;
+        this.imageUrl.set(url);
+      });
+      onCleanup(() => {
+        cancelled = true;
+        if (objectUrl) {
+          URL.revokeObjectURL(objectUrl);
+        }
+      });
     });
   }
 }
