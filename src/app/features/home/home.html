@@ -1,0 +1,31 @@
+<h1>Flash Shields</h1>
+
+@if (error()) {
+  <p role="alert">{{ error() }}</p>
+}
+
+<ul>
+  @for (config of leagueConfigs; track config.externalId) {
+    <li>
+      @if (deckForLeague(config.externalId); as deck) {
+        <span>{{ config.name }}</span>
+        <a data-testid="study-link" [routerLink]="['/study', deck.id]">Estudar</a>
+        <a data-testid="game-link" [routerLink]="['/game', deck.id]">Jogar</a>
+      } @else {
+        <span>{{ config.name }}</span>
+        <button
+          type="button"
+          data-testid="import"
+          [disabled]="importingId() === config.externalId"
+          (click)="importLeague(config)"
+        >
+          @if (importingId() === config.externalId) {
+            Importando {{ progress()?.done ?? 0 }}/{{ progress()?.total ?? 0 }}...
+          } @else {
+            Importar {{ config.name }}
+          }
+        </button>
+      }
+    </li>
+  }
+</ul>
