@@ -47,14 +47,22 @@ describe('Home', () => {
   });
 
   it('importing a league creates its deck and shows study/game links', async () => {
-    importSpy.importLeague.mockResolvedValue(league);
-    deckServiceSpy.createLeagueDeck.mockResolvedValue({
+    const newDeck = {
       id: 'deck-league-ts-4328',
       name: 'Premier League',
-      scope: { kind: 'league', leagueId: 'ts-4328' },
+      scope: { kind: 'league' as const, leagueId: 'ts-4328' },
       teamIds: ['ts-1'],
       createdAt: new Date().toISOString(),
-    });
+    };
+    importSpy.importLeague.mockResolvedValue(league);
+    deckServiceSpy.createLeagueDeck.mockResolvedValue(newDeck);
+    // The component's constructor (which calls refreshDecks() -> listDecks()) already ran
+    // when `fixture = TestBed.createComponent(Home)` executed in beforeEach, above, using the
+    // default mockResolvedValue([]) — that call is already spent. The only listDecks() call
+    // still pending at this point is the one inside refreshDecks() after import completes, so
+    // a single mockResolvedValueOnce covers it; the default mockResolvedValue([]) still backs
+    // the earlier (already-consumed) constructor call.
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
 
     fixture.detectChanges();
     await fixture.whenStable();

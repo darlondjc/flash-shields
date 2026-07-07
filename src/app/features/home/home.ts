@@ -35,9 +35,8 @@ export class Home {
     this.importingId.set(config.externalId);
     try {
       const league = await this.importService.importLeague(config);
-      const deck = await this.deckService.createLeagueDeck(league);
+      await this.deckService.createLeagueDeck(league);
       await this.refreshDecks();
-      this.decks.update(decks => (decks.some(existing => existing.id === deck.id) ? decks : [...decks, deck]));
     } catch {
       this.error.set('Falha ao importar. Tente novamente.');
     } finally {
