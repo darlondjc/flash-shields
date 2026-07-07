@@ -10,6 +10,7 @@ import { Deck } from '../../core/models/deck.model';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink],
   templateUrl: './home.html',
+  styleUrl: './home.scss',
 })
 export class Home {
   private importService = inject(ImportService);

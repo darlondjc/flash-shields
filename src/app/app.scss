@@ -1,0 +1,56 @@
+:host {
+  display: block;
+  min-height: 100%;
+  background: radial-gradient(ellipse at top, #101a33 0%, var(--bg) 55%);
+}
+
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg);
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  background: var(--surface-header);
+  border-top: 1px solid var(--border);
+  padding: 0.5rem 0.25rem calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  z-index: 20;
+}
+
+.bottom-nav__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  background: none;
+  border: none;
+  padding: 0.35rem 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &.is-active {
+    color: var(--green);
+  }
+}

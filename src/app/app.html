@@ -1,4 +1,66 @@
-<nav>
-  <a routerLink="/">Flash Shields</a>
-</nav>
-<router-outlet />
+<div class="app-shell">
+  <router-outlet />
+
+  <nav class="bottom-nav" aria-label="Navegação principal">
+    <a
+      routerLink="/"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: true }"
+      class="bottom-nav__item"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M3 11.5 12 4l9 7.5" stroke-linecap="round" stroke-linejoin="round" />
+        <path
+          d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span>Início</span>
+    </a>
+
+    <button type="button" class="bottom-nav__item" disabled aria-disabled="true" title="Decks (em breve)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3.5" y="3.5" width="7" height="7" rx="1.5" />
+        <rect x="13.5" y="3.5" width="7" height="7" rx="1.5" />
+        <rect x="3.5" y="13.5" width="7" height="7" rx="1.5" />
+        <rect x="13.5" y="13.5" width="7" height="7" rx="1.5" />
+      </svg>
+      <span>Decks</span>
+    </button>
+
+    <button type="button" class="bottom-nav__item" disabled aria-disabled="true" title="Estudo (em breve)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path
+          d="M4 5.5A2 2 0 0 1 6 3.5h6v17H6a2 2 0 0 0-2 2z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <path
+          d="M20 5.5A2 2 0 0 0 18 3.5h-6v17h6a2 2 0 0 1 2 2z"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span>Estudo</span>
+    </button>
+
+    <button type="button" class="bottom-nav__item" disabled aria-disabled="true" title="Jogar (em breve)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M6 4.5v15l13-7.5z" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <span>Jogar</span>
+    </button>
+
+    <button type="button" class="bottom-nav__item" disabled aria-disabled="true" title="Stats (em breve)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path
+          d="M4 20V10M12 20V4M20 20v-7"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span>Stats</span>
+    </button>
+  </nav>
+</div>

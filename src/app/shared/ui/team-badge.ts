@@ -12,6 +12,38 @@ import { Team } from '../../core/models/team.model';
       <div class="team-badge team-badge--loading" [attr.aria-label]="team().name"></div>
     }
   `,
+  styles: [
+    `
+      .team-badge {
+        display: block;
+        width: 168px;
+        height: 168px;
+        object-fit: contain;
+        margin: 0 auto;
+      }
+
+      .team-badge--loading {
+        border-radius: var(--radius-md);
+        background: linear-gradient(
+          100deg,
+          var(--surface-raised) 30%,
+          var(--surface-header) 45%,
+          var(--surface-raised) 60%
+        );
+        background-size: 200% 100%;
+        animation: badge-shimmer 1.3s ease-in-out infinite;
+      }
+
+      @keyframes badge-shimmer {
+        from {
+          background-position: 150% 0;
+        }
+        to {
+          background-position: -50% 0;
+        }
+      }
+    `,
+  ],
 })
 export class TeamBadge {
   private badgeCache = inject(BadgeCacheService);

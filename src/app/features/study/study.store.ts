@@ -9,13 +9,16 @@ export class StudyStore {
 
   readonly deckId = signal<string | null>(null);
   readonly queue = signal<Team[]>([]);
+  readonly total = signal(0);
   readonly current = computed(() => this.queue()[0] ?? null);
   readonly remaining = computed(() => this.queue().length);
   readonly revealed = signal(false);
 
   async load(deckId: string) {
     this.deckId.set(deckId);
-    this.queue.set(await this.srs.buildDailyQueue(deckId));
+    const queue = await this.srs.buildDailyQueue(deckId);
+    this.queue.set(queue);
+    this.total.set(queue.length);
     this.revealed.set(false);
   }
 

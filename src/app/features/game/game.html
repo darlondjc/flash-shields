@@ -1,24 +1,72 @@
-@if (!store.finished()) {
-  <p>Pontos: {{ store.score() }} · Sequência: {{ store.streak() }}</p>
-  @if (store.current(); as question) {
-    <app-team-badge [team]="question.correctTeam" />
-    <div>
-      @for (option of question.options; track option.id) {
-        <button
-          type="button"
-          data-testid="option"
-          [disabled]="!!store.selectedTeamId()"
-          (click)="store.select(option.id)"
-        >
-          {{ option.name }}
-        </button>
-      }
-    </div>
-    @if (store.selectedTeamId()) {
-      <button type="button" (click)="store.next()">Próxima</button>
+<header class="app-header">
+  <div class="app-header__side">
+    <a routerLink="/" class="icon-btn" aria-label="Voltar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M15 5 8 12l7 7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </a>
+  </div>
+  <div class="app-header__title">Múltipla escolha</div>
+  <div class="app-header__side">
+    @if (!store.finished()) {
+      <span class="counter-pill">{{ store.index() + 1 }} / {{ store.total() }}</span>
     }
+  </div>
+</header>
+
+<main class="screen">
+  @if (!store.finished()) {
+    <div class="stat-row">
+      <div class="stat-chip">
+        <span class="stat-chip__value">{{ store.score() }}</span>
+        <span class="stat-chip__label">Pontos</span>
+      </div>
+      <div class="stat-chip stat-chip--streak">
+        <span class="stat-chip__value">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="stat-chip__flame">
+            <path
+              d="M12 2c1 3-3 4-3 8a3 3 0 0 0 6 0c1 1 2 2.5 2 4.5A5.5 5.5 0 0 1 11.5 20 6 6 0 0 1 6 14c0-4 3-6 3-8 1 1 1.5 2 1.5 3.5C11.5 6 11 4 12 2z"
+            />
+          </svg>
+          {{ store.streak() }}
+        </span>
+        <span class="stat-chip__label">Sequência</span>
+      </div>
+    </div>
+
+    @if (store.current(); as question) {
+      <section class="card quiz-card">
+        <p class="quiz-card__prompt">Qual é o time deste escudo?</p>
+        <app-team-badge [team]="question.correctTeam" />
+      </section>
+
+      <div class="option-grid">
+        @for (option of question.options; track option.id) {
+          <button
+            type="button"
+            class="option-btn"
+            [class.option-btn--correct]="optionState(option.id, question.correctTeam.id) === 'correct'"
+            [class.option-btn--incorrect]="optionState(option.id, question.correctTeam.id) === 'incorrect'"
+            data-testid="option"
+            [disabled]="!!store.selectedTeamId()"
+            (click)="store.select(option.id)"
+          >
+            {{ option.name }}
+          </button>
+        }
+      </div>
+
+      @if (store.selectedTeamId()) {
+        <button type="button" class="btn btn--primary" (click)="store.next()">Próxima</button>
+      }
+    }
+  } @else {
+    <section class="card empty-state">
+      <p class="empty-state__title">Fim de jogo!</p>
+      <p class="empty-state__subtitle">
+        Pontuação: {{ store.score() }} · Melhor sequência: {{ store.bestStreak() }}
+      </p>
+      <a routerLink="/" class="btn btn--primary">Voltar</a>
+    </section>
   }
-} @else {
-  <p>Fim de jogo! Pontuação: {{ store.score() }} · Melhor sequência: {{ store.bestStreak() }}</p>
-  <a routerLink="/">Voltar</a>
-}
+</main>

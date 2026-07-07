@@ -1,17 +1,61 @@
-@if (store.current(); as team) {
-  <p>Restam {{ store.remaining() }} card(s)</p>
-  <app-team-badge [team]="team" />
+<header class="app-header">
+  <div class="app-header__side">
+    <a routerLink="/" class="icon-btn" aria-label="Voltar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M15 5 8 12l7 7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </a>
+  </div>
+  <div class="app-header__title">Estudo (SRS)</div>
+  <div class="app-header__side">
+    <span class="counter-pill">{{ store.total() - store.remaining() }} / {{ store.total() }}</span>
+  </div>
+</header>
 
-  @if (!store.revealed()) {
-    <button type="button" data-testid="reveal" (click)="store.reveal()">Mostrar resposta</button>
+<div class="progress-track" role="progressbar" [attr.aria-valuenow]="store.total() - store.remaining()" aria-valuemin="0" [attr.aria-valuemax]="store.total()">
+  <div class="progress-track__fill" [style.width.%]="progressPercent()"></div>
+</div>
+
+<main class="screen">
+  @if (store.current(); as team) {
+    <section class="card study-card">
+      <p class="study-card__prompt">De qual time é este escudo?</p>
+
+      <button type="button" class="study-card__badge-btn" data-testid="reveal" (click)="store.reveal()" [disabled]="store.revealed()">
+        <app-team-badge [team]="team" />
+        @if (!store.revealed()) {
+          <span class="study-card__hint">Toque para revelar</span>
+        } @else {
+          <span class="study-card__answer">{{ team.name }}</span>
+        }
+      </button>
+    </section>
+
+    @if (store.revealed()) {
+      <div class="grade-row">
+        <button type="button" class="grade-btn grade-btn--red" (click)="store.grade(0)">
+          <span>Errei</span>
+          <span class="grade-btn__key" aria-hidden="true">0</span>
+        </button>
+        <button type="button" class="grade-btn grade-btn--orange" (click)="store.grade(3)">
+          <span>Difícil</span>
+          <span class="grade-btn__key" aria-hidden="true">3</span>
+        </button>
+        <button type="button" class="grade-btn grade-btn--green" (click)="store.grade(4)">
+          <span>Bom</span>
+          <span class="grade-btn__key" aria-hidden="true">4</span>
+        </button>
+        <button type="button" class="grade-btn grade-btn--blue" (click)="store.grade(5)">
+          <span>Fácil</span>
+          <span class="grade-btn__key" aria-hidden="true">5</span>
+        </button>
+      </div>
+    }
   } @else {
-    <h2>{{ team.name }}</h2>
-    <button type="button" (click)="store.grade(0)">Errei</button>
-    <button type="button" (click)="store.grade(3)">Difícil</button>
-    <button type="button" (click)="store.grade(4)">Bom</button>
-    <button type="button" (click)="store.grade(5)">Fácil</button>
+    <section class="card empty-state">
+      <p class="empty-state__title">Sessão concluída.</p>
+      <p class="empty-state__subtitle">Você revisou todos os cartões de hoje.</p>
+      <a routerLink="/" class="btn btn--primary">Voltar</a>
+    </section>
   }
-} @else {
-  <p>Sessão concluída.</p>
-  <a routerLink="/">Voltar</a>
-}
+</main>

@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { Game } from './game';
 import { GameStore } from './game.store';
@@ -30,6 +31,8 @@ describe('Game', () => {
     streak: ReturnType<typeof signal<number>>;
     bestStreak: ReturnType<typeof signal<number>>;
     selectedTeamId: ReturnType<typeof signal<string | null>>;
+    index: ReturnType<typeof signal<number>>;
+    total: ReturnType<typeof signal<number>>;
   };
   const correctTeam = makeTeam('ts-1');
   const options = [correctTeam, makeTeam('ts-2'), makeTeam('ts-3'), makeTeam('ts-4')];
@@ -45,11 +48,13 @@ describe('Game', () => {
       streak: signal(0),
       bestStreak: signal(0),
       selectedTeamId: signal<string | null>(null),
+      index: signal(0),
+      total: signal(10),
     };
 
     await TestBed.configureTestingModule({
       imports: [Game],
-      providers: [{ provide: GameStore, useValue: storeSpy }],
+      providers: [provideRouter([]), { provide: GameStore, useValue: storeSpy }],
     }).compileComponents();
     fixture = TestBed.createComponent(Game);
     fixture.componentRef.setInput('deckId', 'deck-1');

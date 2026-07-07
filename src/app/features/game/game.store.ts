@@ -19,6 +19,7 @@ export class GameStore {
   readonly selectedTeamId = signal<string | null>(null);
 
   readonly current = computed(() => this.questions()[this.index()] ?? null);
+  readonly total = computed(() => this.questions().length);
   readonly finished = computed(
     () => this.questions().length > 0 && this.index() >= this.questions().length,
   );

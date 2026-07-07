@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { Study } from './study';
 import { StudyStore } from './study.store';
 import { signal } from '@angular/core';
@@ -25,6 +26,7 @@ describe('Study', () => {
     grade: ReturnType<typeof vi.fn>;
     current: ReturnType<typeof signal<Team | null>>;
     remaining: ReturnType<typeof signal<number>>;
+    total: ReturnType<typeof signal<number>>;
     revealed: ReturnType<typeof signal<boolean>>;
   };
 
@@ -35,12 +37,13 @@ describe('Study', () => {
       grade: vi.fn(),
       current: signal(makeTeam('ts-1')),
       remaining: signal(1),
+      total: signal(1),
       revealed: signal(false),
     };
 
     await TestBed.configureTestingModule({
       imports: [Study],
-      providers: [{ provide: StudyStore, useValue: storeSpy }],
+      providers: [provideRouter([]), { provide: StudyStore, useValue: storeSpy }],
     }).compileComponents();
     fixture = TestBed.createComponent(Study);
     fixture.componentRef.setInput('deckId', 'deck-1');

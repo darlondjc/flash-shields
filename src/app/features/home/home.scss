@@ -1,0 +1,140 @@
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--green-dim);
+  color: var(--green);
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.app-header__title {
+  p:first-child {
+    font-size: 1.05rem;
+  }
+}
+
+.brand-subtitle {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.league-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.league-card {
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.league-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.league-crest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  font-weight: 800;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.league-card__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.league-card__meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.league-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.deck-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: var(--surface-header);
+  }
+}
+
+.deck-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.deck-row__icon--green {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.deck-row__icon--blue {
+  background: var(--blue-dim);
+  color: var(--blue);
+}
+
+.deck-row__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.deck-row__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.deck-row__subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.deck-row__chevron {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}
+
+.league-card__import {
+  width: 100%;
+}

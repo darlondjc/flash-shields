@@ -16,10 +16,10 @@ describe('App', () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('renders the nav bar', () => {
+  it('renders the bottom nav bar with a link to home', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    const nav: HTMLElement = fixture.nativeElement.querySelector('nav');
-    expect(nav?.textContent).toContain('Flash Shields');
+    const nav: HTMLElement = fixture.nativeElement.querySelector('nav.bottom-nav');
+    expect(nav?.textContent).toContain('Início');
   });
 });

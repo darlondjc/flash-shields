@@ -8,6 +8,7 @@ import { TeamBadge } from '../../shared/ui/team-badge';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, TeamBadge],
   templateUrl: './game.html',
+  styleUrl: './game.scss',
 })
 export class Game {
   readonly store = inject(GameStore);
@@ -17,5 +18,13 @@ export class Game {
     effect(() => {
       this.store.load(this.deckId());
     });
+  }
+
+  optionState(optionId: string, correctTeamId: string): 'correct' | 'incorrect' | 'neutral' {
+    const selected = this.store.selectedTeamId();
+    if (!selected) return 'neutral';
+    if (optionId === correctTeamId) return 'correct';
+    if (optionId === selected) return 'incorrect';
+    return 'neutral';
   }
 }
