@@ -76,6 +76,8 @@ export class GameStore {
   }
 
   async next() {
+    if (this.finished()) return;
+
     this.index.update(i => i + 1);
     this.selectedTeamId.set(null);
 

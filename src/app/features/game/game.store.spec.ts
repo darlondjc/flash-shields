@@ -100,4 +100,16 @@ describe('GameStore', () => {
     const sessions = await db.sessions.where('deckId').equals('deck-1').toArray();
     expect(sessions).toHaveLength(0);
   });
+
+  it('does not record a duplicate session when next() is called again after the round finished', async () => {
+    await store.load('deck-1', 1);
+    const correctId = store.current()!.correctTeam.id;
+    store.select(correctId);
+    await store.next();
+    await store.next();
+    await store.next();
+
+    const sessions = await db.sessions.where('deckId').equals('deck-1').toArray();
+    expect(sessions).toHaveLength(1);
+  });
 });
