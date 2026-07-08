@@ -4,6 +4,7 @@ import { League } from '../models/league.model';
 import { Team } from '../models/team.model';
 import { Deck } from '../models/deck.model';
 import { ReviewState } from '../models/review-state.model';
+import { Session } from '../models/session.model';
 
 export interface StoredReviewState extends ReviewState {
   id: string;
@@ -21,6 +22,7 @@ export class DbService extends Dexie {
   decks!: Table<Deck, string>;
   reviewStates!: Table<StoredReviewState, string>;
   badgeBlobs!: Table<StoredBadgeBlob, string>;
+  sessions!: Table<Session, string>;
 
   constructor() {
     super('flash-shields');
@@ -30,6 +32,9 @@ export class DbService extends Dexie {
       decks: 'id',
       reviewStates: 'id, deckId, dueDate',
       badgeBlobs: 'key',
+    });
+    this.version(2).stores({
+      sessions: 'id, deckId, mode, startedAt',
     });
   }
 
