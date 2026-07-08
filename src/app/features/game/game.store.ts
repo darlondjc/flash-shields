@@ -59,6 +59,7 @@ export class GameStore {
     this.answers.update(list => [
       ...list,
       {
+        // The tested/prompted team, not the team the user clicked; see `correct` for that.
         teamId: question.correctTeam.id,
         correct,
         responseMs: Date.now() - this.questionShownAt,
@@ -91,6 +92,10 @@ export class GameStore {
   private async recordSession() {
     const startedAt = this.startedAt();
     if (!this.deckId || !startedAt) return;
-    await this.sessionService.finish(this.deckId, 'multiple-choice', this.answers(), startedAt);
+    try {
+      await this.sessionService.finish(this.deckId, 'multiple-choice', this.answers(), startedAt);
+    } catch (err) {
+      console.error(`GameStore: failed to save session for deck ${this.deckId}`, err);
+    }
   }
 }

@@ -40,12 +40,15 @@ export class StatsStore {
       sessionsByDeck.set(session.deckId, list);
     }
 
+    const deckIds = [...sessionsByDeck.keys()];
+    const decks = await this.db.decks.bulkGet(deckIds);
+    const deckNameById = new Map(deckIds.map((deckId, i) => [deckId, decks[i]?.name]));
+
     const results: DeckAccuracy[] = [];
     for (const [deckId, deckSessions] of sessionsByDeck) {
-      const deck = await this.db.decks.get(deckId);
       results.push({
         deckId,
-        deckName: deck?.name ?? deckId,
+        deckName: deckNameById.get(deckId) ?? deckId,
         sessionCount: deckSessions.length,
         accuracy: computeAccuracy(deckSessions.flatMap(session => session.answers)),
       });
