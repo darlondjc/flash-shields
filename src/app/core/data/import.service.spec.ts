@@ -44,7 +44,7 @@ describe('ImportService', () => {
 
     expect(league.id).toBe('ts-4328');
     expect(league.name).toBe('Premier League');
-    const team = await db.teams.get('ts-1');
+    const team = await db.teams.get('ts-4328-1');
     expect(team?.name).toBe('Arsenal');
     expect(team?.leagueIds).toEqual(['ts-4328']);
   });
@@ -65,6 +65,25 @@ describe('ImportService', () => {
 
     const allTeams = await db.teams.toArray();
     expect(allTeams.length).toBe(1);
+  });
+
+  it('keeps imported teams scoped to the current league when importing another one later', async () => {
+    adapterSpy.fetchTeamsForLeague
+      .mockResolvedValueOnce([
+        { externalId: '1', name: 'Arsenal', alternateNames: [], country: 'England', badgeUrl: 'https://example.com/a.png' },
+      ])
+      .mockResolvedValueOnce([
+        { externalId: '2', name: 'Real Madrid', alternateNames: [], country: 'Spain', badgeUrl: 'https://example.com/b.png' },
+      ]);
+
+    await service.importLeague({ ...config, externalId: '4328', name: 'Premier League', country: 'Inglaterra' });
+    await service.importLeague({ ...config, externalId: '4335', name: 'La Liga', country: 'Espanha' });
+
+    const firstTeam = await db.teams.get('ts-4328-1');
+    const secondTeam = await db.teams.get('ts-4335-2');
+
+    expect(firstTeam?.leagueIds).toEqual(['ts-4328']);
+    expect(secondTeam?.leagueIds).toEqual(['ts-4335']);
   });
 
   it('stores the league badge fetched from the adapter', async () => {

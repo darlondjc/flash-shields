@@ -27,4 +27,12 @@
       }
     </div>
   </section>
+
+  <section aria-label="Dados locais" class="settings-section">
+    <p class="eyebrow">Dados locais</p>
+    <button type="button" class="danger-action" data-testid="clear-local-data" (click)="clearLocalData()">
+      <hugeicons-icon [icon]="Delete01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+      Limpar tudo e reiniciar
+    </button>
+  </section>
 </main>

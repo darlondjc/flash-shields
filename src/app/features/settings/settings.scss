@@ -28,3 +28,21 @@
   background: var(--green-dim);
   color: var(--green);
 }
+
+.settings-section {
+  margin-top: 1.25rem;
+}
+
+.danger-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--surface);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+}

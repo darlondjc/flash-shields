@@ -5,12 +5,14 @@ import { provideRouter } from '@angular/router';
 import { Home } from './home';
 import { ImportService } from '../../core/data/import.service';
 import { DeckService } from '../../core/decks/deck.service';
+import { LeagueService } from '../../core/leagues/league.service';
 import { League } from '../../core/models/league.model';
 
 describe('Home', () => {
   let fixture: ComponentFixture<Home>;
   let importSpy: { importLeague: ReturnType<typeof vi.fn>; progress: ReturnType<typeof signal> };
   let deckServiceSpy: { listDecks: ReturnType<typeof vi.fn>; createLeagueDeck: ReturnType<typeof vi.fn> };
+  let leagueServiceSpy: { getLeague: ReturnType<typeof vi.fn> };
 
   const league: League = {
     id: 'ts-4328',
@@ -24,6 +26,7 @@ describe('Home', () => {
   beforeEach(async () => {
     importSpy = { importLeague: vi.fn(), progress: signal(null) };
     deckServiceSpy = { listDecks: vi.fn().mockResolvedValue([]), createLeagueDeck: vi.fn() };
+    leagueServiceSpy = { getLeague: vi.fn().mockResolvedValue(undefined) };
 
     await TestBed.configureTestingModule({
       imports: [Home],
@@ -31,22 +34,23 @@ describe('Home', () => {
         provideRouter([]),
         { provide: ImportService, useValue: importSpy },
         { provide: DeckService, useValue: deckServiceSpy },
+        { provide: LeagueService, useValue: leagueServiceSpy },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(Home);
   });
 
-  it('lists the configured leagues with an import button when no deck exists yet', async () => {
+  it('shows country selection cards first', async () => {
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const importButton: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="import"]');
-    expect(importButton).toBeTruthy();
-    expect(importButton.textContent).toContain('Premier League');
+    const countryButton: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="select-country"]');
+    expect(countryButton).toBeTruthy();
+    expect(countryButton.textContent).toContain('Inglaterra');
   });
 
-  it('importing a league creates its deck and shows study/game links', async () => {
+  it('selecting a country shows the available leagues and imports one', async () => {
     const newDeck = {
       id: 'deck-league-ts-4328',
       name: 'Premier League',
@@ -68,8 +72,13 @@ describe('Home', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const importButton: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="import"]');
-    importButton.click();
+    const countryButton: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="select-country"]');
+    countryButton.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const leagueButton: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="select-league"]');
+    leagueButton.click();
     await fixture.whenStable();
     fixture.detectChanges();
 

@@ -29,7 +29,14 @@ export class ImportService {
     this.progress.set({ done: 0, total: importedTeams.length });
 
     for (const [index, imported] of importedTeams.entries()) {
-      await this.db.upsertTeam(mapImportedTeamToTeam(imported, league.id));
+      const team = mapImportedTeamToTeam(imported, league.id);
+      const existingTeam = await this.db.teams.get(team.id);
+      if (existingTeam) {
+        const mergedLeagueIds = Array.from(new Set([...existingTeam.leagueIds, ...team.leagueIds]));
+        await this.db.teams.put({ ...existingTeam, ...team, leagueIds: mergedLeagueIds });
+      } else {
+        await this.db.teams.put(team);
+      }
       this.progress.set({ done: index + 1, total: importedTeams.length });
     }
 

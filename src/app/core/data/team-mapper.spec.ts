@@ -13,7 +13,7 @@ describe('mapImportedTeamToTeam', () => {
 
     const team = mapImportedTeamToTeam(imported, 'ts-4328');
 
-    expect(team.id).toBe('ts-133604');
+    expect(team.id).toBe('ts-4328-133604');
     expect(team.externalIds).toEqual({ thesportsdb: '133604' });
     expect(team.leagueIds).toEqual(['ts-4328']);
     expect(team.name).toBe('Arsenal');

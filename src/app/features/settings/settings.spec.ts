@@ -45,4 +45,15 @@ describe('Settings', () => {
     expect(lightOption.classList.contains('theme-option--active')).toBe(true);
     expect(localStorage.getItem('flash-shields:theme')).toBe('light');
   });
+
+  it('clears local data when the reset action is clicked', async () => {
+    localStorage.setItem('flash-shields:theme', 'dark');
+    fixture.detectChanges();
+
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('[data-testid="clear-local-data"]');
+    button.click();
+    await fixture.whenStable();
+
+    expect(localStorage.length).toBe(0);
+  });
 });
