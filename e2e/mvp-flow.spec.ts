@@ -19,4 +19,8 @@ test('import a league, study one card, and play one round', async ({ page }) => 
   await expect(firstOption).toBeVisible();
   await firstOption.click();
   await expect(page.getByRole('button', { name: 'Próxima' })).toBeVisible();
+
+  await page.goto('/');
+  await page.getByTestId('stats-link').click();
+  await expect(page.getByText('Estatísticas')).toBeVisible();
 });
