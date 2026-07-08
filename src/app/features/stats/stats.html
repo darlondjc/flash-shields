@@ -1,0 +1,58 @@
+<header class="app-header">
+  <div class="app-header__side">
+    <a routerLink="/" class="icon-btn" aria-label="Voltar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M15 5 8 12l7 7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </a>
+  </div>
+  <div class="app-header__title">Estatísticas</div>
+  <div class="app-header__side"></div>
+</header>
+
+<main class="screen">
+  @if (store.totalSessions() === 0) {
+    <section class="card empty-state">
+      <p class="empty-state__title">Nenhuma partida ainda</p>
+      <p class="empty-state__subtitle">
+        Jogue uma rodada de múltipla escolha pra começar a acompanhar seu progresso.
+      </p>
+      <a routerLink="/" class="btn btn--primary">Ir jogar</a>
+    </section>
+  } @else {
+    <div class="stat-row">
+      <div class="stat-chip">
+        <span class="stat-chip__value">{{ store.totalSessions() }}</span>
+        <span class="stat-chip__label">Partidas</span>
+      </div>
+      <div class="stat-chip">
+        <span class="stat-chip__value">{{ formatPercent(store.overallAccuracy()) }}</span>
+        <span class="stat-chip__label">Precisão geral</span>
+      </div>
+    </div>
+
+    <section aria-label="Precisão por deck">
+      <p class="eyebrow">Por deck</p>
+      <div class="deck-accuracy-list">
+        @for (deck of store.accuracyByDeck(); track deck.deckId) {
+          <div class="card deck-accuracy-row" data-testid="deck-accuracy">
+            <span class="deck-accuracy-row__name">{{ deck.deckName }}</span>
+            <span class="deck-accuracy-row__value">{{ formatPercent(deck.accuracy) }}</span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section aria-label="Melhor sequência por modo">
+      <p class="eyebrow">Melhor sequência</p>
+      <div class="deck-accuracy-list">
+        @for (entry of store.bestStreakByMode(); track entry.mode) {
+          <div class="card deck-accuracy-row" data-testid="mode-streak">
+            <span class="deck-accuracy-row__name">{{ modeLabel(entry.mode) }}</span>
+            <span class="deck-accuracy-row__value">{{ entry.bestStreak }}</span>
+          </div>
+        }
+      </div>
+    </section>
+  }
+</main>

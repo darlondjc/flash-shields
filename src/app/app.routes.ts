@@ -13,4 +13,8 @@ export const routes: Routes = [
     path: 'game/:deckId',
     loadComponent: () => import('./features/game/game').then(m => m.Game),
   },
+  {
+    path: 'stats',
+    loadComponent: () => import('./features/stats/stats').then(m => m.Stats),
+  },
 ];

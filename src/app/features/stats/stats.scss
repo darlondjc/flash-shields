@@ -1,0 +1,70 @@
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-chip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.stat-chip__value {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.stat-chip__label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.empty-state {
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.empty-state__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.empty-state__subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.deck-accuracy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.deck-accuracy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+.deck-accuracy-row__name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.deck-accuracy-row__value {
+  font-weight: 800;
+  color: var(--text-muted);
+}

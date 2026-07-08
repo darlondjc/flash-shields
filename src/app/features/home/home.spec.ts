@@ -78,4 +78,13 @@ describe('Home', () => {
     const studyLink = fixture.nativeElement.querySelector('[data-testid="study-link"]');
     expect(studyLink).toBeTruthy();
   });
+
+  it('always shows a link to the stats page', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const statsLink = fixture.nativeElement.querySelector('[data-testid="stats-link"]');
+    expect(statsLink).toBeTruthy();
+  });
 });
