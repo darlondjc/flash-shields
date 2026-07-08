@@ -82,4 +82,45 @@ describe('StatsStore', () => {
 
     expect(store.bestStreakByMode()).toEqual([{ mode: 'multiple-choice', bestStreak: 2 }]);
   });
+
+  it('separates accuracy independently across multiple decks', async () => {
+    const deck2: Deck = {
+      id: 'deck-2',
+      name: 'Segunda Divisão',
+      scope: { kind: 'league', leagueId: 'ts-5000' },
+      teamIds: [],
+      createdAt: new Date().toISOString(),
+    };
+    await db.decks.put(deck2);
+
+    // Deck 1: 2 sessions, 3 correct out of 4 answers (75% accuracy)
+    await db.sessions.bulkPut([
+      makeSession({ deckId: 'deck-1', answers: [answer(true), answer(false)] }),
+      makeSession({ deckId: 'deck-1', answers: [answer(true), answer(true)] }),
+    ]);
+
+    // Deck 2: 1 session, 0 correct out of 2 answers (0% accuracy)
+    await db.sessions.put(makeSession({ deckId: 'deck-2', answers: [answer(false), answer(false)] }));
+
+    await store.load();
+
+    const accuracyByDeck = store.accuracyByDeck();
+    expect(accuracyByDeck.length).toBe(2);
+
+    const deck1Accuracy = accuracyByDeck.find(d => d.deckId === 'deck-1');
+    expect(deck1Accuracy).toEqual({
+      deckId: 'deck-1',
+      deckName: 'Premier League',
+      sessionCount: 2,
+      accuracy: 0.75,
+    });
+
+    const deck2Accuracy = accuracyByDeck.find(d => d.deckId === 'deck-2');
+    expect(deck2Accuracy).toEqual({
+      deckId: 'deck-2',
+      deckName: 'Segunda Divisão',
+      sessionCount: 1,
+      accuracy: 0,
+    });
+  });
 });
