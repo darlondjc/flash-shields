@@ -87,4 +87,14 @@ describe('Home', () => {
     const statsLink = fixture.nativeElement.querySelector('[data-testid="stats-link"]');
     expect(statsLink).toBeTruthy();
   });
+
+  it('always shows an enabled link to settings', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const settingsLink: HTMLAnchorElement = fixture.nativeElement.querySelector('[data-testid="settings-link"]');
+    expect(settingsLink).toBeTruthy();
+    expect(settingsLink.hasAttribute('disabled')).toBe(false);
+  });
 });

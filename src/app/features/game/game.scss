@@ -29,12 +29,6 @@
   font-weight: 800;
 }
 
-.stat-chip__flame {
-  width: 16px;
-  height: 16px;
-  color: var(--orange);
-}
-
 .stat-chip__label {
   font-size: 0.72rem;
   color: var(--text-muted);
@@ -90,7 +84,7 @@
 .option-btn--incorrect {
   background: rgba(239, 68, 68, 0.12);
   border-color: var(--red);
-  color: #fca5a5;
+  color: var(--red-text);
 }
 
 .empty-state {

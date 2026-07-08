@@ -11,4 +11,5 @@ export interface ImportedTeam {
 export interface DataSourceAdapter {
   readonly sourceId: string;
   fetchTeamsForLeague(externalLeagueId: string): Promise<ImportedTeam[]>;
+  fetchLeagueBadge(externalLeagueId: string): Promise<string | undefined>;
 }

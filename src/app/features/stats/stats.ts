@@ -1,18 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject, PendingTasks } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import { StatsStore } from './stats.store';
 import { GameMode } from '../../core/models/session.model';
 
 @Component({
   selector: 'app-stats',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, HugeiconsIconComponent],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })
 export class Stats {
   readonly store = inject(StatsStore);
   private readonly pendingTasks = inject(PendingTasks);
+
+  readonly ArrowLeft01Icon = ArrowLeft01Icon;
 
   constructor() {
     // Runs load() inside a PendingTasks block so Angular's zoneless stability

@@ -56,7 +56,7 @@ export class TeamBadge {
       this.imageUrl.set(null);
       let cancelled = false;
       let objectUrl: string | null = null;
-      this.badgeCache.getObjectUrl(currentTeam).then(url => {
+      this.badgeCache.getObjectUrl(currentTeam.id, currentTeam.badgeUrl).then(url => {
         if (cancelled) {
           URL.revokeObjectURL(url);
           return;

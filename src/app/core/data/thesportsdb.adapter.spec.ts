@@ -56,4 +56,21 @@ describe('TheSportsDbAdapter', () => {
     httpMock.expectOne(req => req.url.includes('lookup_all_teams.php')).flush({ teams: null });
     expect(await promise).toEqual([]);
   });
+
+  it('fetches the league badge URL', async () => {
+    const promise = adapter.fetchLeagueBadge('4328');
+
+    const req = httpMock.expectOne(req => req.url.includes('lookupleague.php') && req.params.get('id') === '4328');
+    req.flush({
+      leagues: [{ idLeague: '4328', strBadge: 'https://r2.thesportsdb.com/images/media/league/badge/premier.png' }],
+    });
+
+    expect(await promise).toBe('https://r2.thesportsdb.com/images/media/league/badge/premier.png');
+  });
+
+  it('returns undefined when the league lookup has no badge or no match', async () => {
+    const promise = adapter.fetchLeagueBadge('0');
+    httpMock.expectOne(req => req.url.includes('lookupleague.php')).flush({ leagues: null });
+    expect(await promise).toBeUndefined();
+  });
 });

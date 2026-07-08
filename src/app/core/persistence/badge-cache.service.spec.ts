@@ -4,19 +4,6 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { BadgeCacheService } from './badge-cache.service';
 import { DbService } from './db.service';
-import { Team } from '../models/team.model';
-
-function makeTeam(): Team {
-  return {
-    id: 'ts-1',
-    externalIds: { thesportsdb: '1' },
-    name: 'Arsenal',
-    alternateNames: [],
-    country: 'England',
-    leagueIds: ['ts-4328'],
-    badgeUrl: 'https://example.com/arsenal.png',
-  };
-}
 
 // Angular's unit-test builder runs specs under jsdom, whose Blob polyfill is not recognized by
 // Node's native `structuredClone` (which `fake-indexeddb` uses internally to clone values on
@@ -57,7 +44,7 @@ describe('BadgeCacheService', () => {
   afterEach(() => httpMock.verify());
 
   it('downloads and caches the badge on first request', async () => {
-    const promise = service.getObjectUrl(makeTeam());
+    const promise = service.getObjectUrl('ts-1', 'https://example.com/arsenal.png');
     await macrotask();
     const req = httpMock.expectOne('https://example.com/arsenal.png');
     // HttpTestingController's flush() does its own `instanceof Blob` check against the jsdom
@@ -76,8 +63,21 @@ describe('BadgeCacheService', () => {
 
   it('serves from cache without a second HTTP request', async () => {
     await db.badgeBlobs.put({ key: 'ts-1', blob: new NodeBlob(['cached-bytes']) });
-    const url = await service.getObjectUrl(makeTeam());
+    const url = await service.getObjectUrl('ts-1', 'https://example.com/arsenal.png');
     expect(url).toContain('blob:');
     httpMock.expectNone('https://example.com/arsenal.png');
+  });
+
+  it('namespaces cache keys so a league badge cannot collide with a team badge', async () => {
+    await db.badgeBlobs.put({ key: 'ts-1', blob: new NodeBlob(['team-bytes']) });
+    const promise = service.getObjectUrl('league:ts-1', 'https://example.com/league.png');
+    await macrotask();
+    const req = httpMock.expectOne('https://example.com/league.png');
+    req.flush(new Blob(['league-png-bytes']));
+
+    const url = await promise;
+    expect(url).toContain('blob:');
+    const cached = await db.badgeBlobs.get('league:ts-1');
+    expect(cached).toBeDefined();
   });
 });

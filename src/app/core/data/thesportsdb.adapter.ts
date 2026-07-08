@@ -18,6 +18,15 @@ interface TheSportsDbTeamsResponse {
   teams: TheSportsDbTeam[] | null;
 }
 
+interface TheSportsDbLeague {
+  idLeague: string;
+  strBadge: string | null;
+}
+
+interface TheSportsDbLeagueResponse {
+  leagues: TheSportsDbLeague[] | null;
+}
+
 const BASE_URL = 'https://www.thesportsdb.com/api/v1/json';
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +40,14 @@ export class TheSportsDbAdapter implements DataSourceAdapter {
       this.http.get<TheSportsDbTeamsResponse>(url, { params: { id: externalLeagueId } }),
     );
     return (response.teams ?? []).map(mapTeam);
+  }
+
+  async fetchLeagueBadge(externalLeagueId: string): Promise<string | undefined> {
+    const url = `${BASE_URL}/${environment.theSportsDbApiKey}/lookupleague.php`;
+    const response = await firstValueFrom(
+      this.http.get<TheSportsDbLeagueResponse>(url, { params: { id: externalLeagueId } }),
+    );
+    return response.leagues?.[0]?.strBadge ?? undefined;
   }
 }
 

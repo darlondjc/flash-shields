@@ -13,6 +13,7 @@ export class ImportService {
   readonly progress = signal<{ done: number; total: number } | null>(null);
 
   async importLeague(config: LeagueImportConfig): Promise<League> {
+    const badgeUrl = await this.adapter.fetchLeagueBadge(config.externalId);
     const league: League = {
       id: `ts-${config.externalId}`,
       externalIds: { thesportsdb: config.externalId },
@@ -20,6 +21,7 @@ export class ImportService {
       country: config.country,
       regionId: config.regionId,
       sport: 'soccer',
+      badgeUrl,
     };
     await this.db.leagues.put(league);
 

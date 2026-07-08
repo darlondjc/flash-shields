@@ -1,0 +1,30 @@
+<header class="app-header">
+  <div class="app-header__side">
+    <a routerLink="/" class="icon-btn" aria-label="Voltar">
+      <hugeicons-icon [icon]="ArrowLeft01Icon" [size]="20" [strokeWidth]="1.8" color="currentColor" />
+    </a>
+  </div>
+  <div class="app-header__title">Configurações</div>
+  <div class="app-header__side"></div>
+</header>
+
+<main class="screen">
+  <section aria-label="Tema">
+    <p class="eyebrow">Tema</p>
+    <div class="theme-options" role="radiogroup" aria-label="Tema">
+      @for (option of themeOptions; track option.value) {
+        <button
+          type="button"
+          class="theme-option"
+          [class.theme-option--active]="theme.preference() === option.value"
+          role="radio"
+          [attr.aria-checked]="theme.preference() === option.value"
+          data-testid="theme-option"
+          (click)="selectTheme(option.value)"
+        >
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  </section>
+</main>
