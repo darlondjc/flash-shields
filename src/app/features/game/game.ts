@@ -3,7 +3,7 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { ArrowLeft01Icon, FireIcon } from '@hugeicons/core-free-icons';
-import { map, startWith } from 'rxjs/operators';
+import { map } from 'rxjs/operators';
 import { GameMode } from '../../core/models/session.model';
 import { GameStore } from './game.store';
 import { TeamBadge } from '../../shared/ui/team-badge';
@@ -24,15 +24,17 @@ export class Game {
   readonly FireIcon = FireIcon;
 
   private mode = toSignal(
-    this.route.queryParams.pipe(
-      map(params => (params['mode'] as GameMode) ?? 'multiple-choice'),
-      startWith('multiple-choice' as GameMode)
-    ),
+    this.route.queryParams.pipe(map(params => (params['mode'] as GameMode) ?? 'multiple-choice')),
+    { initialValue: 'multiple-choice' as GameMode },
   );
 
   constructor() {
     effect(() => {
-      this.store.load(this.deckId(), this.mode());
+      const deckId = this.deckId();
+      const mode = this.mode();
+      if (deckId) {
+        this.store.load(deckId, mode);
+      }
     });
   }
 

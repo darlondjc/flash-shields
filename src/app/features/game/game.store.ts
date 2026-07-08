@@ -18,7 +18,7 @@ export class GameStore {
   private sessionService = inject(SessionService);
 
   private deckId: string | null = null;
-  private gameMode: GameMode = 'multiple-choice';
+  private gameModeSignal = signal<GameMode>('multiple-choice');
   private questionShownAt = 0;
 
   readonly questions = signal<Question[]>([]);
@@ -35,12 +35,12 @@ export class GameStore {
   readonly finished = computed(
     () => this.questions().length > 0 && this.index() >= this.questions().length,
   );
-  readonly mode = computed(() => this.gameMode);
+  readonly mode = computed(() => this.gameModeSignal());
 
   async load(deckId: string, mode: GameMode = 'multiple-choice', roundSize: number = DEFAULT_ROUND_SIZE) {
     const deck = await this.deckService.getDeck(deckId);
     this.deckId = deckId;
-    this.gameMode = mode;
+    this.gameModeSignal.set(mode);
     this.questions.set([]);
     this.index.set(0);
     this.score.set(0);
@@ -102,7 +102,7 @@ export class GameStore {
     const startedAt = this.startedAt();
     if (!this.deckId || !startedAt) return;
     try {
-      await this.sessionService.finish(this.deckId, this.gameMode, this.answers(), startedAt);
+      await this.sessionService.finish(this.deckId, this.gameModeSignal(), this.answers(), startedAt);
     } catch (err) {
       console.error(`GameStore: failed to save session for deck ${this.deckId}`, err);
     }
