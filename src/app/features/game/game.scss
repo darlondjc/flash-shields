@@ -106,3 +106,52 @@
   color: var(--text-muted);
   margin-bottom: 0.75rem;
 }
+
+.team-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+.badge-btn {
+  background: var(--surface-raised);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease,
+    transform 0.12s ease;
+
+  &:not(:disabled):hover {
+    background: var(--surface-header);
+    transform: scale(1.02);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  app-team-badge {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+}
+
+.badge-btn--correct {
+  border-color: var(--green);
+  background: var(--green-dim);
+}
+
+.badge-btn--incorrect {
+  border-color: var(--red);
+  background: rgba(239, 68, 68, 0.12);
+}

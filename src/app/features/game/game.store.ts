@@ -2,11 +2,14 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { DeckService } from '../../core/decks/deck.service';
 import { DbService } from '../../core/persistence/db.service';
 import { SessionService } from '../../core/session/session.service';
+import { GameMode } from '../../core/models/session.model';
 import { Team } from '../../core/models/team.model';
 import { SessionAnswer } from '../../core/models/session.model';
-import { buildMultipleChoiceQuestions, MultipleChoiceQuestion } from './game.util';
+import { buildMultipleChoiceQuestions, buildReverseQuestions, MultipleChoiceQuestion, ReverseQuestion } from './game.util';
 
 const DEFAULT_ROUND_SIZE = 10;
+
+type Question = MultipleChoiceQuestion | ReverseQuestion;
 
 @Injectable({ providedIn: 'root' })
 export class GameStore {
@@ -15,9 +18,10 @@ export class GameStore {
   private sessionService = inject(SessionService);
 
   private deckId: string | null = null;
+  private gameMode: GameMode = 'multiple-choice';
   private questionShownAt = 0;
 
-  readonly questions = signal<MultipleChoiceQuestion[]>([]);
+  readonly questions = signal<Question[]>([]);
   readonly index = signal(0);
   readonly score = signal(0);
   readonly streak = signal(0);
@@ -31,10 +35,12 @@ export class GameStore {
   readonly finished = computed(
     () => this.questions().length > 0 && this.index() >= this.questions().length,
   );
+  readonly mode = computed(() => this.gameMode);
 
-  async load(deckId: string, roundSize: number = DEFAULT_ROUND_SIZE) {
+  async load(deckId: string, mode: GameMode = 'multiple-choice', roundSize: number = DEFAULT_ROUND_SIZE) {
     const deck = await this.deckService.getDeck(deckId);
     this.deckId = deckId;
+    this.gameMode = mode;
     this.questions.set([]);
     this.index.set(0);
     this.score.set(0);
@@ -46,7 +52,10 @@ export class GameStore {
     if (!deck) return;
 
     const teams = (await this.db.teams.bulkGet(deck.teamIds)).filter((t): t is Team => !!t);
-    this.questions.set(buildMultipleChoiceQuestions(teams, roundSize));
+    const questions = mode === 'reverse'
+      ? buildReverseQuestions(teams, roundSize)
+      : buildMultipleChoiceQuestions(teams, roundSize);
+    this.questions.set(questions);
     this.questionShownAt = Date.now();
   }
 
@@ -93,7 +102,7 @@ export class GameStore {
     const startedAt = this.startedAt();
     if (!this.deckId || !startedAt) return;
     try {
-      await this.sessionService.finish(this.deckId, 'multiple-choice', this.answers(), startedAt);
+      await this.sessionService.finish(this.deckId, this.gameMode, this.answers(), startedAt);
     } catch (err) {
       console.error(`GameStore: failed to save session for deck ${this.deckId}`, err);
     }

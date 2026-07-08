@@ -36,16 +36,15 @@
       @for (config of leagueConfigs; track config.externalId) {
         <article class="card league-card">
           <div class="league-card__header">
-            <span class="league-crest" [attr.aria-hidden]="true">{{ config.name.charAt(0) }}</span>
-            <div class="league-card__info">
-              <p class="league-card__name">{{ config.name }}</p>
-              <p class="league-card__meta">{{ config.country }}</p>
-            </div>
             @if (leagueFor(config.externalId); as league) {
               <span class="league-card__badge">
                 <app-league-badge [league]="league" />
               </span>
             }
+            <div class="league-card__info">
+              <p class="league-card__name">{{ config.name }}</p>
+              <p class="league-card__meta">{{ config.country }}</p>
+            </div>
           </div>
 
           @if (deckForLeague(config.externalId); as deck) {
@@ -68,6 +67,17 @@
                 <span class="deck-row__text">
                   <span class="deck-row__title">Múltipla escolha</span>
                   <span class="deck-row__subtitle">Jogar agora</span>
+                </span>
+                <span class="deck-row__chevron">›</span>
+              </a>
+
+              <a class="deck-row" data-testid="reverse-link" [routerLink]="['/game', deck.id]" [queryParams]="{ mode: 'reverse' }">
+                <span class="deck-row__icon deck-row__icon--purple">
+                  <hugeicons-icon [icon]="Quiz01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+                </span>
+                <span class="deck-row__text">
+                  <span class="deck-row__title">Reverso</span>
+                  <span class="deck-row__subtitle">Escolha o escudo</span>
                 </span>
                 <span class="deck-row__chevron">›</span>
               </a>

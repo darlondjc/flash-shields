@@ -1,11 +1,11 @@
 import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { signal } from '@angular/core';
 import { Game } from './game';
 import { GameStore } from './game.store';
 import { Team } from '../../core/models/team.model';
-import { MultipleChoiceQuestion } from './game.util';
+import { MultipleChoiceQuestion, ReverseQuestion } from './game.util';
 
 function makeTeam(id: string): Team {
   return {
@@ -25,7 +25,8 @@ describe('Game', () => {
     load: ReturnType<typeof vi.fn>;
     select: ReturnType<typeof vi.fn>;
     next: ReturnType<typeof vi.fn>;
-    current: ReturnType<typeof signal<MultipleChoiceQuestion | null>>;
+    mode: ReturnType<typeof signal<'multiple-choice' | 'reverse'>>;
+    current: ReturnType<typeof signal<MultipleChoiceQuestion | ReverseQuestion | null>>;
     finished: ReturnType<typeof signal<boolean>>;
     score: ReturnType<typeof signal<number>>;
     streak: ReturnType<typeof signal<number>>;
@@ -42,6 +43,7 @@ describe('Game', () => {
       load: vi.fn().mockResolvedValue(undefined),
       select: vi.fn(),
       next: vi.fn(),
+      mode: signal('multiple-choice'),
       current: signal({ correctTeam, options }),
       finished: signal(false),
       score: signal(0),
@@ -60,10 +62,10 @@ describe('Game', () => {
     fixture.componentRef.setInput('deckId', 'deck-1');
   });
 
-  it('loads the deck on init', async () => {
+  it('loads the deck in multiple-choice mode by default', async () => {
     fixture.detectChanges();
     await fixture.whenStable();
-    expect(storeSpy.load).toHaveBeenCalledWith('deck-1');
+    expect(storeSpy.load).toHaveBeenCalledWith('deck-1', 'multiple-choice');
   });
 
   it('renders one option button per option and calls select() on click', () => {
@@ -75,5 +77,13 @@ describe('Game', () => {
 
     buttons[0].click();
     expect(storeSpy.select).toHaveBeenCalled();
+  });
+
+  it('passes the mode parameter from query params to store.load()', async () => {
+    const router = TestBed.inject(Router);
+    await router.navigate([], { queryParams: { mode: 'reverse' } });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(storeSpy.load).toHaveBeenCalledWith('deck-1', 'reverse');
   });
 });

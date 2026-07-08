@@ -4,7 +4,16 @@
       <hugeicons-icon [icon]="ArrowLeft01Icon" [size]="20" [strokeWidth]="1.8" color="currentColor" />
     </a>
   </div>
-  <div class="app-header__title">Múltipla escolha</div>
+  <div class="app-header__title">
+    @switch (store.mode()) {
+      @case ('reverse') {
+        Reverso
+      }
+      @default {
+        Múltipla escolha
+      }
+    }
+  </div>
   <div class="app-header__side">
     @if (!store.finished()) {
       <span class="counter-pill">{{ store.index() + 1 }} / {{ store.total() }}</span>
@@ -29,26 +38,52 @@
     </div>
 
     @if (store.current(); as question) {
-      <section class="card quiz-card">
-        <p class="quiz-card__prompt">Qual é o time deste escudo?</p>
-        <app-team-badge [team]="question.correctTeam" />
-      </section>
+      @switch (store.mode()) {
+        @case ('reverse') {
+          <section class="card quiz-card">
+            <p class="quiz-card__prompt">Qual é o escudo deste time?</p>
+            <p class="team-name">{{ question.correctTeam.name }}</p>
+          </section>
 
-      <div class="option-grid">
-        @for (option of question.options; track option.id) {
-          <button
-            type="button"
-            class="option-btn"
-            [class.option-btn--correct]="optionState(option.id, question.correctTeam.id) === 'correct'"
-            [class.option-btn--incorrect]="optionState(option.id, question.correctTeam.id) === 'incorrect'"
-            data-testid="option"
-            [disabled]="!!store.selectedTeamId()"
-            (click)="store.select(option.id)"
-          >
-            {{ option.name }}
-          </button>
+          <div class="badge-grid">
+            @for (option of question.options; track option.id) {
+              <button
+                type="button"
+                class="badge-btn"
+                [class.badge-btn--correct]="optionState(option.id, question.correctTeam.id) === 'correct'"
+                [class.badge-btn--incorrect]="optionState(option.id, question.correctTeam.id) === 'incorrect'"
+                data-testid="option"
+                [disabled]="!!store.selectedTeamId()"
+                (click)="store.select(option.id)"
+              >
+                <app-team-badge [team]="option" />
+              </button>
+            }
+          </div>
         }
-      </div>
+        @default {
+          <section class="card quiz-card">
+            <p class="quiz-card__prompt">Qual é o time deste escudo?</p>
+            <app-team-badge [team]="question.correctTeam" />
+          </section>
+
+          <div class="option-grid">
+            @for (option of question.options; track option.id) {
+              <button
+                type="button"
+                class="option-btn"
+                [class.option-btn--correct]="optionState(option.id, question.correctTeam.id) === 'correct'"
+                [class.option-btn--incorrect]="optionState(option.id, question.correctTeam.id) === 'incorrect'"
+                data-testid="option"
+                [disabled]="!!store.selectedTeamId()"
+                (click)="store.select(option.id)"
+              >
+                {{ option.name }}
+              </button>
+            }
+          </div>
+        }
+      }
 
       @if (store.selectedTeamId()) {
         <button type="button" class="btn btn--primary" (click)="store.next()">Próxima</button>
