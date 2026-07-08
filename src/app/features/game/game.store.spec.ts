@@ -40,6 +40,7 @@ describe('GameStore', () => {
     db = TestBed.inject(DbService);
     await db.teams.clear();
     await db.teams.bulkPut(deck.teamIds.map(makeTeam));
+    await db.sessions.clear();
   });
 
   it('loads a round of questions for the deck', async () => {
@@ -75,5 +76,28 @@ describe('GameStore', () => {
     store.select(store.current()!.correctTeam.id);
     store.next();
     expect(store.finished()).toBe(true);
+  });
+
+  it('records a session once the round finishes', async () => {
+    await store.load('deck-1', 1);
+    const correctId = store.current()!.correctTeam.id;
+    store.select(correctId);
+    await store.next();
+
+    const sessions = await db.sessions.where('deckId').equals('deck-1').toArray();
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0].mode).toBe('multiple-choice');
+    expect(sessions[0].score).toBe(1);
+    expect(sessions[0].answers).toHaveLength(1);
+    expect(sessions[0].answers[0].correct).toBe(true);
+  });
+
+  it('does not record a session before the round finishes', async () => {
+    await store.load('deck-1', 3);
+    store.select(store.current()!.correctTeam.id);
+    await store.next();
+
+    const sessions = await db.sessions.where('deckId').equals('deck-1').toArray();
+    expect(sessions).toHaveLength(0);
   });
 });

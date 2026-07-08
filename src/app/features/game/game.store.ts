@@ -1,7 +1,9 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { DeckService } from '../../core/decks/deck.service';
 import { DbService } from '../../core/persistence/db.service';
+import { SessionService } from '../../core/session/session.service';
 import { Team } from '../../core/models/team.model';
+import { SessionAnswer } from '../../core/models/session.model';
 import { buildMultipleChoiceQuestions, MultipleChoiceQuestion } from './game.util';
 
 const DEFAULT_ROUND_SIZE = 10;
@@ -10,6 +12,10 @@ const DEFAULT_ROUND_SIZE = 10;
 export class GameStore {
   private deckService = inject(DeckService);
   private db = inject(DbService);
+  private sessionService = inject(SessionService);
+
+  private deckId: string | null = null;
+  private questionShownAt = 0;
 
   readonly questions = signal<MultipleChoiceQuestion[]>([]);
   readonly index = signal(0);
@@ -17,6 +23,8 @@ export class GameStore {
   readonly streak = signal(0);
   readonly bestStreak = signal(0);
   readonly selectedTeamId = signal<string | null>(null);
+  readonly answers = signal<SessionAnswer[]>([]);
+  readonly startedAt = signal<string | null>(null);
 
   readonly current = computed(() => this.questions()[this.index()] ?? null);
   readonly total = computed(() => this.questions().length);
@@ -26,16 +34,20 @@ export class GameStore {
 
   async load(deckId: string, roundSize: number = DEFAULT_ROUND_SIZE) {
     const deck = await this.deckService.getDeck(deckId);
+    this.deckId = deckId;
     this.questions.set([]);
     this.index.set(0);
     this.score.set(0);
     this.streak.set(0);
     this.bestStreak.set(0);
     this.selectedTeamId.set(null);
+    this.answers.set([]);
+    this.startedAt.set(new Date().toISOString());
     if (!deck) return;
 
     const teams = (await this.db.teams.bulkGet(deck.teamIds)).filter((t): t is Team => !!t);
     this.questions.set(buildMultipleChoiceQuestions(teams, roundSize));
+    this.questionShownAt = Date.now();
   }
 
   select(teamId: string) {
@@ -43,7 +55,18 @@ export class GameStore {
     if (!question || this.selectedTeamId()) return;
     this.selectedTeamId.set(teamId);
 
-    if (teamId === question.correctTeam.id) {
+    const correct = teamId === question.correctTeam.id;
+    this.answers.update(list => [
+      ...list,
+      {
+        teamId: question.correctTeam.id,
+        correct,
+        responseMs: Date.now() - this.questionShownAt,
+        answeredAt: new Date().toISOString(),
+      },
+    ]);
+
+    if (correct) {
       this.score.update(s => s + 1);
       this.streak.update(s => s + 1);
       this.bestStreak.update(b => Math.max(b, this.streak()));
@@ -52,8 +75,20 @@ export class GameStore {
     }
   }
 
-  next() {
+  async next() {
     this.index.update(i => i + 1);
     this.selectedTeamId.set(null);
+
+    if (this.finished()) {
+      await this.recordSession();
+    } else {
+      this.questionShownAt = Date.now();
+    }
+  }
+
+  private async recordSession() {
+    const startedAt = this.startedAt();
+    if (!this.deckId || !startedAt) return;
+    await this.sessionService.finish(this.deckId, 'multiple-choice', this.answers(), startedAt);
   }
 }
