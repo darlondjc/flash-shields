@@ -11,6 +11,8 @@ export interface ReverseQuestion {
   options: Team[];
 }
 
+export type Question = MultipleChoiceQuestion | ReverseQuestion;
+
 export function buildMultipleChoiceQuestions(
   teams: readonly Team[],
   roundSize: number,

@@ -5,6 +5,7 @@ import { Stats } from './stats';
 import { DbService } from '../../core/persistence/db.service';
 import { Deck } from '../../core/models/deck.model';
 import { Session } from '../../core/models/session.model';
+import { League } from '../../core/models/league.model';
 
 describe('Stats', () => {
   let fixture: ComponentFixture<Stats>;
@@ -26,6 +27,7 @@ describe('Stats', () => {
     db = TestBed.inject(DbService);
     await db.sessions.clear();
     await db.decks.clear();
+    await db.leagues.clear();
     await db.decks.put(deck);
   });
 
@@ -59,5 +61,59 @@ describe('Stats', () => {
     const deckRow = fixture.nativeElement.querySelector('[data-testid="deck-accuracy"]');
     expect(deckRow.textContent).toContain('Premier League');
     expect(deckRow.textContent).toContain('100%');
+  });
+
+  it('shows the league badge on the deck row when the deck\'s league is known', async () => {
+    const league: League = {
+      id: 'ts-4328',
+      externalIds: { thesportsdb: '4328' },
+      name: 'Premier League',
+      country: 'England',
+      regionId: 'europe',
+      sport: 'soccer',
+      // No badgeUrl: LeagueBadge skips fetching without one, so this test can
+      // assert the icon slot renders without also mocking HttpClient.
+    };
+    await db.leagues.put(league);
+    const session: Session = {
+      id: 'sess-1',
+      deckId: 'deck-1',
+      mode: 'multiple-choice',
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      answers: [{ teamId: 't1', correct: true, responseMs: 1000, answeredAt: new Date().toISOString() }],
+      score: 1,
+    };
+    await db.sessions.put(session);
+
+    fixture = TestBed.createComponent(Stats);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const deckRow = fixture.nativeElement.querySelector('[data-testid="deck-accuracy"]');
+    expect(deckRow.querySelector('.deck-accuracy-row__badge')).toBeTruthy();
+  });
+
+  it('shows a proper Portuguese label for reverse mode, not the raw "reverse" value', async () => {
+    const session: Session = {
+      id: 'sess-1',
+      deckId: 'deck-1',
+      mode: 'reverse',
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      answers: [{ teamId: 't1', correct: true, responseMs: 1000, answeredAt: new Date().toISOString() }],
+      score: 1,
+    };
+    await db.sessions.put(session);
+
+    fixture = TestBed.createComponent(Stats);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const modeRow = fixture.nativeElement.querySelector('[data-testid="mode-streak"]');
+    expect(modeRow.textContent).toContain('Reverso');
+    expect(modeRow.textContent).not.toContain('reverse');
   });
 });

@@ -4,11 +4,12 @@ import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
 import { StatsStore } from './stats.store';
 import { GameMode } from '../../core/models/session.model';
+import { LeagueBadge } from '../../shared/ui/league-badge';
 
 @Component({
   selector: 'app-stats',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, HugeiconsIconComponent],
+  imports: [RouterLink, HugeiconsIconComponent, LeagueBadge],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
 })
@@ -36,6 +37,11 @@ export class Stats {
   }
 
   modeLabel(mode: GameMode): string {
-    return mode === 'multiple-choice' ? 'Múltipla escolha' : mode;
+    switch (mode) {
+      case 'multiple-choice':
+        return 'Múltipla escolha';
+      case 'reverse':
+        return 'Reverso';
+    }
   }
 }

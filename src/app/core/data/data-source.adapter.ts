@@ -8,8 +8,13 @@ export interface ImportedTeam {
   founded?: number;
 }
 
+export interface LeagueDetails {
+  name?: string;
+  badgeUrl?: string;
+}
+
 export interface DataSourceAdapter {
   readonly sourceId: string;
-  fetchTeamsForLeague(externalLeagueId: string): Promise<ImportedTeam[]>;
-  fetchLeagueBadge(externalLeagueId: string): Promise<string | undefined>;
+  fetchTeamsForLeague(leagueName: string): Promise<ImportedTeam[]>;
+  fetchLeagueDetails(externalLeagueId: string): Promise<LeagueDetails>;
 }

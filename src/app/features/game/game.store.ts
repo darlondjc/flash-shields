@@ -5,11 +5,10 @@ import { SessionService } from '../../core/session/session.service';
 import { GameMode } from '../../core/models/session.model';
 import { Team } from '../../core/models/team.model';
 import { SessionAnswer } from '../../core/models/session.model';
-import { buildMultipleChoiceQuestions, buildReverseQuestions, MultipleChoiceQuestion, ReverseQuestion } from './game.util';
+import { buildMultipleChoiceQuestions, buildReverseQuestions, Question } from './game.util';
+import { pickRandom, shuffle } from '../../core/util/random.util';
 
 const DEFAULT_ROUND_SIZE = 10;
-
-type Question = MultipleChoiceQuestion | ReverseQuestion;
 
 @Injectable({ providedIn: 'root' })
 export class GameStore {
@@ -20,6 +19,10 @@ export class GameStore {
   private deckId: string | null = null;
   private gameModeSignal = signal<GameMode>('multiple-choice');
   private questionShownAt = 0;
+  private allTeams: Team[] = [];
+  // Teams whose badge failed to load this session — excluded when picking a
+  // replacement so a broken badge doesn't just get swapped for another broken one.
+  private failedTeamIds = new Set<string>();
 
   readonly questions = signal<Question[]>([]);
   readonly index = signal(0);
@@ -49,9 +52,12 @@ export class GameStore {
     this.selectedTeamId.set(null);
     this.answers.set([]);
     this.startedAt.set(new Date().toISOString());
+    this.allTeams = [];
+    this.failedTeamIds.clear();
     if (!deck) return;
 
     const teams = (await this.db.teams.bulkGet(deck.teamIds)).filter((t): t is Team => !!t);
+    this.allTeams = teams;
     const questions = mode === 'reverse'
       ? buildReverseQuestions(teams, roundSize)
       : buildMultipleChoiceQuestions(teams, roundSize);
@@ -96,6 +102,69 @@ export class GameStore {
     } else {
       this.questionShownAt = Date.now();
     }
+  }
+
+  // Called when a badge in the current question fails to load after retries.
+  // Swaps the broken team for a fresh one so the round can keep going instead
+  // of leaving a permanently broken image on screen.
+  handleBadgeLoadFailure(question: Question, teamId: string) {
+    if (this.current() !== question || this.selectedTeamId()) return;
+    this.failedTeamIds.add(teamId);
+
+    if (teamId === question.correctTeam.id) {
+      this.replaceCurrentQuestion(question);
+    } else {
+      this.replaceOption(question, teamId);
+    }
+  }
+
+  private replaceOption(question: Question, failedTeamId: string) {
+    // Exclude every team already showing in this question too, not just other
+    // questions — otherwise the replacement could duplicate a sibling option.
+    const excluded = new Set([
+      ...this.usedTeamIds(question),
+      ...this.failedTeamIds,
+      question.correctTeam.id,
+      ...question.options.map(option => option.id),
+    ]);
+    const replacement = this.pickReplacementTeam(excluded);
+    if (!replacement) return;
+
+    const options = question.options.map(option => (option.id === failedTeamId ? replacement : option));
+    this.replaceCurrentWith({ ...question, options: shuffle(options) });
+  }
+
+  private replaceCurrentQuestion(question: Question) {
+    const excluded = new Set([...this.usedTeamIds(question), ...this.failedTeamIds]);
+    const pool = this.allTeams.filter(team => !excluded.has(team.id));
+    const source = pool.length > 0 ? pool : this.allTeams.filter(team => !this.failedTeamIds.has(team.id));
+    const [replacement] = this.mode() === 'reverse'
+      ? buildReverseQuestions(source, 1)
+      : buildMultipleChoiceQuestions(source, 1);
+    if (!replacement) return;
+
+    this.replaceCurrentWith(replacement);
+  }
+
+  private replaceCurrentWith(question: Question) {
+    const index = this.index();
+    this.questions.update(questions => questions.map((q, i) => (i === index ? question : q)));
+  }
+
+  private pickReplacementTeam(excluded: Set<string>): Team | undefined {
+    const pool = this.allTeams.filter(team => !excluded.has(team.id));
+    const source = pool.length > 0 ? pool : this.allTeams.filter(team => !this.failedTeamIds.has(team.id));
+    return pickRandom(source, 1)[0];
+  }
+
+  private usedTeamIds(excluding: Question): Set<string> {
+    const ids = new Set<string>();
+    for (const question of this.questions()) {
+      if (question === excluding) continue;
+      ids.add(question.correctTeam.id);
+      for (const option of question.options) ids.add(option.id);
+    }
+    return ids;
   }
 
   private async recordSession() {

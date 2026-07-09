@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { DataSourceAdapter, ImportedTeam } from './data-source.adapter';
+import { DataSourceAdapter, ImportedTeam, LeagueDetails } from './data-source.adapter';
 
 interface TheSportsDbTeam {
   idTeam: string;
@@ -20,6 +20,7 @@ interface TheSportsDbTeamsResponse {
 
 interface TheSportsDbLeague {
   idLeague: string;
+  strLeague: string | null;
   strBadge: string | null;
 }
 
@@ -34,20 +35,24 @@ export class TheSportsDbAdapter implements DataSourceAdapter {
   readonly sourceId = 'thesportsdb';
   private http = inject(HttpClient);
 
-  async fetchTeamsForLeague(externalLeagueId: string): Promise<ImportedTeam[]> {
-    const url = `${BASE_URL}/${environment.theSportsDbApiKey}/lookup_all_teams.php`;
+  async fetchTeamsForLeague(leagueName: string): Promise<ImportedTeam[]> {
+    // lookup_all_teams.php?id= ignora o id com a chave de teste gratuita e
+    // sempre devolve a mesma amostra fixa de times. search_all_teams.php?l=
+    // filtra corretamente pelo nome canônico da liga (strLeague).
+    const url = `${BASE_URL}/${environment.theSportsDbApiKey}/search_all_teams.php`;
     const response = await firstValueFrom(
-      this.http.get<TheSportsDbTeamsResponse>(url, { params: { id: externalLeagueId } }),
+      this.http.get<TheSportsDbTeamsResponse>(url, { params: { l: leagueName } }),
     );
     return (response.teams ?? []).map(mapTeam);
   }
 
-  async fetchLeagueBadge(externalLeagueId: string): Promise<string | undefined> {
+  async fetchLeagueDetails(externalLeagueId: string): Promise<LeagueDetails> {
     const url = `${BASE_URL}/${environment.theSportsDbApiKey}/lookupleague.php`;
     const response = await firstValueFrom(
       this.http.get<TheSportsDbLeagueResponse>(url, { params: { id: externalLeagueId } }),
     );
-    return response.leagues?.[0]?.strBadge ?? undefined;
+    const league = response.leagues?.[0];
+    return { name: league?.strLeague ?? undefined, badgeUrl: league?.strBadge ?? undefined };
   }
 }
 

@@ -47,23 +47,18 @@
     </div>
 
     @if (!selectedCountry()) {
-      <div class="league-list">
+      <div class="league-list league-list--countries">
         @for (country of countryOptions(); track country.name) {
           <button
             type="button"
-            class="card league-card league-card--selectable"
+            class="card league-card league-card--selectable league-card--country"
             data-testid="select-country"
             (click)="selectCountry(country.name)"
           >
-            <div class="league-card__header">
-              <span class="league-card__flag" [attr.aria-label]="country.name">{{ country.flag }}</span>
-              <div class="league-card__info">
-                <p class="league-card__name">{{ country.name }}</p>
-                <p class="league-card__meta">{{ country.count }} {{ country.count === 1 ? 'torneio' : 'torneios' }}</p>
-              </div>
-              <span class="league-card__cta" aria-label="Selecionar">
-                <hugeicons-icon [icon]="CheckmarkCircle02Icon" [size]="16" [strokeWidth]="2" color="currentColor" />
-              </span>
+            <span class="league-card__flag" [attr.aria-label]="country.name">{{ country.flag }}</span>
+            <div class="league-card__info">
+              <p class="league-card__name">{{ country.name }}</p>
+              <p class="league-card__meta">{{ country.count }} {{ country.count === 1 ? 'torneio' : 'torneios' }}</p>
             </div>
           </button>
         }
@@ -130,7 +125,7 @@
 
         @if (selectedDeck(); as deck) {
           <div class="league-card__actions">
-            <a class="deck-row" data-testid="study-link" [routerLink]="['/study', deck.id]">
+            <a class="deck-row" data-testid="study-link" [routerLink]="['/study', deck.id]" [queryParams]="{ league: selectedConfig.externalId }">
               <span class="deck-row__icon deck-row__icon--green">
                 <hugeicons-icon [icon]="Book01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
               </span>
@@ -141,7 +136,7 @@
               <span class="deck-row__chevron">›</span>
             </a>
 
-            <a class="deck-row" data-testid="game-link" [routerLink]="['/game', deck.id]">
+            <a class="deck-row" data-testid="game-link" [routerLink]="['/game', deck.id]" [queryParams]="{ league: selectedConfig.externalId }">
               <span class="deck-row__icon deck-row__icon--blue">
                 <hugeicons-icon [icon]="Quiz01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
               </span>
@@ -152,7 +147,7 @@
               <span class="deck-row__chevron">›</span>
             </a>
 
-            <a class="deck-row" data-testid="reverse-link" [routerLink]="['/game', deck.id]" [queryParams]="{ mode: 'reverse' }">
+            <a class="deck-row" data-testid="reverse-link" [routerLink]="['/game', deck.id]" [queryParams]="{ mode: 'reverse', league: selectedConfig.externalId }">
               <span class="deck-row__icon deck-row__icon--purple">
                 <hugeicons-icon [icon]="Quiz01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
               </span>

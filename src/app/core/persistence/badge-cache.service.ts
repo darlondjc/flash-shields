@@ -8,13 +8,32 @@ export class BadgeCacheService {
   private http = inject(HttpClient);
   private db = inject(DbService);
 
+  // Badge URLs we've already learned can't be XHR/fetch-ed into a Blob (typically a CORS-blocking
+  // CDN — TheSportsDB's r2.thesportsdb.com sends no Access-Control-Allow-Origin header, so this is
+  // every badge in practice). Session-scoped: once a URL fails here, retrying the exact same
+  // request will fail again every time (it's not transient), so we stop attempting it and go
+  // straight to the <img>-tag fallback, which loads the same cross-origin image fine — browsers
+  // only block *reading* the bytes via script, not rendering them. Without this, every single
+  // badge render re-attempts and re-fails the same doomed fetch.
+  private uncacheableUrls = new Set<string>();
+
   // key must be unique across every caller (teams and leagues share this cache/table), so
   // callers namespace their own ids — e.g. a team passes its id as-is, a league prefixes with
   // `league:` — to avoid a numeric id collision between TheSportsDB's team and league id spaces.
-  async getObjectUrl(key: string, badgeUrl: string): Promise<string> {
-    const cached = await this.db.badgeBlobs.get(key);
-    if (cached) {
-      return URL.createObjectURL(cached.blob);
+  //
+  // forceRefresh skips the IndexedDB cache and re-fetches from the network — used when a
+  // consumer retries after a failed <img> load, since a bad/corrupt cached blob would otherwise
+  // keep being served forever.
+  async getObjectUrl(key: string, badgeUrl: string, forceRefresh = false): Promise<string> {
+    if (this.uncacheableUrls.has(badgeUrl)) {
+      return badgeUrl;
+    }
+
+    if (!forceRefresh) {
+      const cached = await this.db.badgeBlobs.get(key);
+      if (cached) {
+        return URL.createObjectURL(cached.blob);
+      }
     }
 
     try {
@@ -29,6 +48,7 @@ export class BadgeCacheService {
       // this is distinguishable from other failures in this block, e.g. a `db.badgeBlobs.put`
       // write failure (IndexedDB quota, private browsing) — both used to fail silently the
       // same way, which is how the CORS issue went unnoticed for three prior tasks.
+      this.uncacheableUrls.add(badgeUrl);
       console.warn(`BadgeCacheService: falling back to remote URL for ${key} (fetch/cache failed)`, err);
       return badgeUrl;
     }

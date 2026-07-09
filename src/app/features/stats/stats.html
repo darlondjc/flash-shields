@@ -34,7 +34,14 @@
       <div class="deck-accuracy-list">
         @for (deck of store.accuracyByDeck(); track deck.deckId) {
           <div class="card deck-accuracy-row" data-testid="deck-accuracy">
-            <span class="deck-accuracy-row__name">{{ deck.deckName }}</span>
+            <span class="deck-accuracy-row__label">
+              @if (deck.league; as league) {
+                <span class="deck-accuracy-row__badge">
+                  <app-league-badge [league]="league" />
+                </span>
+              }
+              <span class="deck-accuracy-row__name">{{ deck.deckName }}</span>
+            </span>
             <span class="deck-accuracy-row__value">{{ formatPercent(deck.accuracy) }}</span>
           </div>
         }

@@ -68,6 +68,36 @@ describe('BadgeCacheService', () => {
     httpMock.expectNone('https://example.com/arsenal.png');
   });
 
+  it('stops re-attempting a URL that already failed, falling straight back to the remote URL', async () => {
+    const promise1 = service.getObjectUrl('ts-1', 'https://example.com/broken.png');
+    await macrotask();
+    httpMock.expectOne('https://example.com/broken.png').error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+
+    const url1 = await promise1;
+    expect(url1).toBe('https://example.com/broken.png');
+
+    // A second request for the same badge URL must not hit the network again —
+    // the first failure already told us this URL can't be fetched as a blob.
+    const url2 = await service.getObjectUrl('ts-1', 'https://example.com/broken.png');
+    expect(url2).toBe('https://example.com/broken.png');
+    httpMock.expectNone('https://example.com/broken.png');
+  });
+
+  it('does not mark a different badge URL as uncacheable when another one has failed', async () => {
+    const failingPromise = service.getObjectUrl('ts-1', 'https://example.com/broken.png');
+    await macrotask();
+    httpMock.expectOne('https://example.com/broken.png').error(new ProgressEvent('error'), { status: 0, statusText: 'Unknown Error' });
+    await failingPromise;
+
+    const workingPromise = service.getObjectUrl('ts-2', 'https://example.com/arsenal.png');
+    await macrotask();
+    const req = httpMock.expectOne('https://example.com/arsenal.png');
+    req.flush(new Blob(['fake-png-bytes']));
+
+    const url = await workingPromise;
+    expect(url).toContain('blob:');
+  });
+
   it('namespaces cache keys so a league badge cannot collide with a team badge', async () => {
     await db.badgeBlobs.put({ key: 'ts-1', blob: new NodeBlob(['team-bytes']) });
     const promise = service.getObjectUrl('league:ts-1', 'https://example.com/league.png');

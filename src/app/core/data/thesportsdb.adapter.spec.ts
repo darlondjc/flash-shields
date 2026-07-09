@@ -18,10 +18,10 @@ describe('TheSportsDbAdapter', () => {
   afterEach(() => httpMock.verify());
 
   it('maps TheSportsDB teams into ImportedTeam records', async () => {
-    const promise = adapter.fetchTeamsForLeague('4328');
+    const promise = adapter.fetchTeamsForLeague('English Premier League');
 
     const req = httpMock.expectOne(
-      req => req.url.includes('lookup_all_teams.php') && req.params.get('id') === '4328',
+      req => req.url.includes('search_all_teams.php') && req.params.get('l') === 'English Premier League',
     );
     req.flush({
       teams: [
@@ -52,25 +52,34 @@ describe('TheSportsDbAdapter', () => {
   });
 
   it('returns an empty array when the league has no teams', async () => {
-    const promise = adapter.fetchTeamsForLeague('0');
-    httpMock.expectOne(req => req.url.includes('lookup_all_teams.php')).flush({ teams: null });
+    const promise = adapter.fetchTeamsForLeague('Unknown League');
+    httpMock.expectOne(req => req.url.includes('search_all_teams.php')).flush({ teams: null });
     expect(await promise).toEqual([]);
   });
 
-  it('fetches the league badge URL', async () => {
-    const promise = adapter.fetchLeagueBadge('4328');
+  it('fetches the league name and badge URL', async () => {
+    const promise = adapter.fetchLeagueDetails('4328');
 
     const req = httpMock.expectOne(req => req.url.includes('lookupleague.php') && req.params.get('id') === '4328');
     req.flush({
-      leagues: [{ idLeague: '4328', strBadge: 'https://r2.thesportsdb.com/images/media/league/badge/premier.png' }],
+      leagues: [
+        {
+          idLeague: '4328',
+          strLeague: 'English Premier League',
+          strBadge: 'https://r2.thesportsdb.com/images/media/league/badge/premier.png',
+        },
+      ],
     });
 
-    expect(await promise).toBe('https://r2.thesportsdb.com/images/media/league/badge/premier.png');
+    expect(await promise).toEqual({
+      name: 'English Premier League',
+      badgeUrl: 'https://r2.thesportsdb.com/images/media/league/badge/premier.png',
+    });
   });
 
-  it('returns undefined when the league lookup has no badge or no match', async () => {
-    const promise = adapter.fetchLeagueBadge('0');
+  it('returns an empty details object when the league lookup has no match', async () => {
+    const promise = adapter.fetchLeagueDetails('0');
     httpMock.expectOne(req => req.url.includes('lookupleague.php')).flush({ leagues: null });
-    expect(await promise).toBeUndefined();
+    expect(await promise).toEqual({ name: undefined, badgeUrl: undefined });
   });
 });

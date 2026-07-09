@@ -72,4 +72,60 @@ describe('TeamBadge', () => {
     const img: HTMLImageElement = fixture.nativeElement.querySelector('img');
     expect(img.src).toContain('blob:team-2-url');
   });
+
+  it('retries with a forced cache refresh after an image load error, and shows the badge once the retry succeeds', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    vi.useFakeTimers();
+    try {
+      const img: HTMLImageElement = fixture.nativeElement.querySelector('img');
+      img.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+
+      // Shows the loading shimmer while the retry is pending, not the failed state.
+      expect(fixture.nativeElement.querySelector('.team-badge--loading')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.team-badge--failed')).toBeNull();
+
+      await vi.advanceTimersByTimeAsync(1000);
+      fixture.detectChanges();
+
+      expect(badgeCacheSpy.getObjectUrl).toHaveBeenLastCalledWith(
+        'ts-1',
+        'https://example.com/arsenal.png',
+        true,
+      );
+      expect(fixture.nativeElement.querySelector('img')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.team-badge--failed')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives up and emits loadFailed after repeated load errors for the same team', async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const failedSpy = vi.fn();
+    fixture.componentInstance.loadFailed.subscribe(failedSpy);
+
+    vi.useFakeTimers();
+    try {
+      for (let i = 0; i < 3; i++) {
+        const img: HTMLImageElement = fixture.nativeElement.querySelector('img');
+        img.dispatchEvent(new Event('error'));
+        fixture.detectChanges();
+        await vi.advanceTimersByTimeAsync(1000);
+        fixture.detectChanges();
+      }
+
+      expect(failedSpy).toHaveBeenCalledTimes(1);
+      expect(fixture.nativeElement.querySelector('.team-badge--failed')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('img')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

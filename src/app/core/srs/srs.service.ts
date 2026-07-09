@@ -5,6 +5,7 @@ import { Team } from '../models/team.model';
 import { ReviewQuality } from '../models/review-state.model';
 import { applySm2, today } from './sm2';
 import { NEW_CARDS_PER_DAY } from './srs.constants';
+import { shuffle } from '../util/random.util';
 
 @Injectable({ providedIn: 'root' })
 export class SrsService {
@@ -43,7 +44,7 @@ export class SrsService {
       await this.db.reviewStates.put(state);
     }
 
-    const queueTeamIds = [...dueTeamIds, ...newTeamIds];
+    const queueTeamIds = [...shuffle(dueTeamIds), ...shuffle(newTeamIds)];
     const teams = await this.db.teams.bulkGet(queueTeamIds);
     return teams.filter((team): team is Team => !!team);
   }

@@ -1,9 +1,14 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+async function selectFirstLeague(page: Page) {
+  await page.getByTestId('select-country').first().click();
+  await page.getByTestId('select-league').first().click();
+}
 
 test('import a league, study one card, and play one round', async ({ page }) => {
   await page.goto('/');
 
-  await page.getByTestId('import').click();
+  await selectFirstLeague(page);
   await expect(page.getByTestId('study-link')).toBeVisible({ timeout: 30_000 });
 
   await page.getByTestId('study-link').click();
@@ -14,11 +19,13 @@ test('import a league, study one card, and play one round', async ({ page }) => 
   await page.getByRole('button', { name: 'Bom' }).click();
 
   await page.goto('/');
+  await selectFirstLeague(page);
   await page.getByTestId('game-link').click();
   const firstOption = page.getByTestId('option').first();
   await expect(firstOption).toBeVisible();
+  await expect(page.getByText('1 / 10')).toBeVisible();
   await firstOption.click();
-  await expect(page.getByRole('button', { name: 'Próxima' })).toBeVisible();
+  await expect(page.getByText('2 / 10')).toBeVisible({ timeout: 5_000 });
 
   await page.goto('/');
   await page.getByTestId('stats-link').click();
@@ -28,7 +35,7 @@ test('import a league, study one card, and play one round', async ({ page }) => 
 test('play reverse mode', async ({ page }) => {
   await page.goto('/');
 
-  await page.getByTestId('import').click();
+  await selectFirstLeague(page);
   await expect(page.getByTestId('reverse-link')).toBeVisible({ timeout: 30_000 });
 
   await page.getByTestId('reverse-link').click();
@@ -37,6 +44,7 @@ test('play reverse mode', async ({ page }) => {
 
   const firstOption = page.getByTestId('option').first();
   await expect(firstOption).toBeVisible();
+  await expect(page.getByText('1 / 10')).toBeVisible();
   await firstOption.click();
-  await expect(page.getByRole('button', { name: 'Próxima' })).toBeVisible();
+  await expect(page.getByText('2 / 10')).toBeVisible({ timeout: 5_000 });
 });

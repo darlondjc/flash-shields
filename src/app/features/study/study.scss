@@ -45,6 +45,13 @@
   &:disabled {
     cursor: default;
   }
+
+  app-team-badge {
+    display: block;
+    width: 100%;
+    max-width: 168px;
+    margin: 0 auto;
+  }
 }
 
 .study-card__hint {

@@ -1,8 +1,8 @@
 <header class="app-header">
   <div class="app-header__side">
-    <a routerLink="/" class="icon-btn" aria-label="Voltar">
+    <button type="button" class="icon-btn" aria-label="Voltar" (click)="back()">
       <hugeicons-icon [icon]="ArrowLeft01Icon" [size]="20" [strokeWidth]="1.8" color="currentColor" />
-    </a>
+    </button>
   </div>
   <div class="app-header__title">Estudo (SRS)</div>
   <div class="app-header__side">
@@ -53,7 +53,7 @@
     <section class="card empty-state">
       <p class="empty-state__title">Sessão concluída.</p>
       <p class="empty-state__subtitle">Você revisou todos os cartões de hoje.</p>
-      <a routerLink="/" class="btn btn--primary">Voltar</a>
+      <button type="button" class="btn btn--primary" (click)="back()">Voltar</button>
     </section>
   }
 </main>

@@ -132,4 +132,60 @@ describe('GameStore', () => {
     expect(sessions[0].mode).toBe('reverse');
     expect(sessions[0].score).toBe(1);
   });
+
+  describe('handleBadgeLoadFailure', () => {
+    it('replaces a failing distractor option with a different team, keeping the correct team', async () => {
+      await store.load('deck-1', 'multiple-choice', 1);
+      const question = store.current()!;
+      const correctId = question.correctTeam.id;
+      const originalOptionIds = question.options.map(o => o.id);
+      const failedOptionId = question.options.find(o => o.id !== correctId)!.id;
+
+      store.handleBadgeLoadFailure(question, failedOptionId);
+
+      const updated = store.current()!;
+      expect(updated.correctTeam.id).toBe(correctId);
+      expect(updated.options.length).toBe(4);
+      expect(updated.options.map(o => o.id)).toContain(correctId);
+      expect(updated.options.map(o => o.id)).not.toContain(failedOptionId);
+      // Only 1 of the deck's 5 teams was left unused by the original question.
+      const newOptionIds = updated.options.map(o => o.id);
+      expect(newOptionIds.filter(id => !originalOptionIds.includes(id))).toHaveLength(1);
+    });
+
+    it("regenerates the whole question when the correct team's own badge fails", async () => {
+      await store.load('deck-1', 'multiple-choice', 1);
+      const question = store.current()!;
+      const correctId = question.correctTeam.id;
+
+      store.handleBadgeLoadFailure(question, correctId);
+
+      const updated = store.current()!;
+      expect(updated.correctTeam.id).not.toBe(correctId);
+      expect(updated.options.map(o => o.id)).not.toContain(correctId);
+    });
+
+    it('ignores a badge failure reported for a question that is no longer current', async () => {
+      await store.load('deck-1', 'multiple-choice', 2);
+      const firstQuestion = store.current()!;
+      store.select(firstQuestion.correctTeam.id);
+      await store.next();
+      const secondQuestion = store.current()!;
+
+      store.handleBadgeLoadFailure(firstQuestion, firstQuestion.correctTeam.id);
+
+      expect(store.current()).toBe(secondQuestion);
+    });
+
+    it('ignores a badge failure after the current question has already been answered', async () => {
+      await store.load('deck-1', 'multiple-choice', 1);
+      const question = store.current()!;
+      const distractorId = question.options.find(o => o.id !== question.correctTeam.id)!.id;
+      store.select(question.correctTeam.id);
+
+      store.handleBadgeLoadFailure(question, distractorId);
+
+      expect(store.current()).toBe(question);
+    });
+  });
 });

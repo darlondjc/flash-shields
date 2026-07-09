@@ -9,13 +9,13 @@ describe('LeagueBadge', () => {
   let badgeCacheSpy: { getObjectUrl: ReturnType<typeof vi.fn> };
 
   const league: League = {
-    id: 'ts-4328',
-    externalIds: { thesportsdb: '4328' },
-    name: 'Premier League',
-    country: 'England',
+    id: 'ts-9001',
+    externalIds: { thesportsdb: '9001' },
+    name: 'Fake League',
+    country: 'Testland',
     regionId: 'europe',
     sport: 'soccer',
-    badgeUrl: 'https://example.com/premier.png',
+    badgeUrl: 'https://example.com/fake-league.png',
   };
 
   const leagueWithoutBadge: League = { ...league, id: 'ts-9999', name: 'No Badge League', badgeUrl: undefined };
@@ -36,10 +36,30 @@ describe('LeagueBadge', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(badgeCacheSpy.getObjectUrl).toHaveBeenCalledWith('league:ts-4328', 'https://example.com/premier.png');
+    expect(badgeCacheSpy.getObjectUrl).toHaveBeenCalledWith('league:ts-9001', 'https://example.com/fake-league.png');
     const img: HTMLImageElement = fixture.nativeElement.querySelector('img');
     expect(img.src).toContain('blob:fake-url');
-    expect(img.alt).toBe('Premier League');
+    expect(img.alt).toBe('Fake League');
+  });
+
+  it.each([
+    ['ts-4328', 'Premier League', '/leagues/premier-league.png'],
+    ['ts-4335', 'La Liga', '/leagues/la-liga.png'],
+    ['ts-4331', 'Bundesliga', '/leagues/bundesliga.png'],
+    ['ts-4334', 'Ligue 1', '/leagues/ligue-1.png'],
+    ['ts-4337', 'Eredivisie', '/leagues/eredivisie.png'],
+    ['ts-4344', 'Primeira Liga', '/leagues/primeira-liga.png'],
+  ])('renders the local override asset for %s without hitting the badge cache', async (id, name, assetPath) => {
+    const overriddenLeague: League = { ...league, id, name };
+    fixture.componentRef.setInput('league', overriddenLeague);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(badgeCacheSpy.getObjectUrl).not.toHaveBeenCalled();
+    const img: HTMLImageElement = fixture.nativeElement.querySelector('img');
+    expect(img.src).toContain(assetPath);
+    expect(img.alt).toBe(name);
   });
 
   it('renders nothing when the league has no badge yet', async () => {

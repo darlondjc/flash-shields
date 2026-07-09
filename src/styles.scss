@@ -23,6 +23,12 @@
   --shell-glow: #101a33;
   --shell-shadow: rgba(0, 0, 0, 0.5);
 
+  /* Fixed light backdrop for league badge chips, independent of theme — league
+     crests are third-party art with wildly different colors (some dark-on-transparent,
+     some light-on-transparent), so the one thing we control is giving them a
+     background that reliably contrasts in both themes, like an app-icon tile. */
+  --badge-chip-bg: #ffffff;
+
   --radius-lg: 18px;
   --radius-md: 12px;
   --radius-sm: 8px;

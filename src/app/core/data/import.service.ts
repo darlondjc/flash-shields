@@ -13,7 +13,7 @@ export class ImportService {
   readonly progress = signal<{ done: number; total: number } | null>(null);
 
   async importLeague(config: LeagueImportConfig): Promise<League> {
-    const badgeUrl = await this.adapter.fetchLeagueBadge(config.externalId);
+    const details = await this.adapter.fetchLeagueDetails(config.externalId);
     const league: League = {
       id: `ts-${config.externalId}`,
       externalIds: { thesportsdb: config.externalId },
@@ -21,11 +21,14 @@ export class ImportService {
       country: config.country,
       regionId: config.regionId,
       sport: 'soccer',
-      badgeUrl,
+      badgeUrl: details.badgeUrl,
     };
     await this.db.leagues.put(league);
 
-    const importedTeams = await this.adapter.fetchTeamsForLeague(config.externalId);
+    // O time é buscado pelo nome canônico da liga na TheSportsDB (strLeague),
+    // não pelo externalId: com a chave de teste gratuita, buscar por id sempre
+    // devolve a mesma amostra fixa de times, ignorando a liga selecionada.
+    const importedTeams = await this.adapter.fetchTeamsForLeague(details.name ?? config.name);
     this.progress.set({ done: 0, total: importedTeams.length });
 
     for (const [index, imported] of importedTeams.entries()) {

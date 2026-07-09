@@ -4,6 +4,7 @@ import { StatsStore } from './stats.store';
 import { DbService } from '../../core/persistence/db.service';
 import { Session } from '../../core/models/session.model';
 import { Deck } from '../../core/models/deck.model';
+import { League } from '../../core/models/league.model';
 
 function makeSession(overrides: Partial<Session> = {}): Session {
   return {
@@ -40,6 +41,7 @@ describe('StatsStore', () => {
     db = TestBed.inject(DbService);
     await db.sessions.clear();
     await db.decks.clear();
+    await db.leagues.clear();
     await db.decks.put(deck);
   });
 
@@ -71,6 +73,32 @@ describe('StatsStore', () => {
     expect(store.accuracyByDeck()).toEqual([
       { deckId: 'deck-1', deckName: 'Premier League', sessionCount: 1, accuracy: 1 },
     ]);
+  });
+
+  it('attaches the deck\'s league when one is stored for its scope', async () => {
+    const league: League = {
+      id: 'ts-4328',
+      externalIds: { thesportsdb: '4328' },
+      name: 'Premier League',
+      country: 'England',
+      regionId: 'europe',
+      sport: 'soccer',
+      badgeUrl: 'https://example.com/premier-league-badge.png',
+    };
+    await db.leagues.put(league);
+    await db.sessions.put(makeSession({ deckId: 'deck-1', answers: [answer(true)] }));
+
+    await store.load();
+
+    expect(store.accuracyByDeck()[0].league).toEqual(league);
+  });
+
+  it('leaves the league undefined when none is stored for the deck\'s scope', async () => {
+    await db.sessions.put(makeSession({ deckId: 'deck-1', answers: [answer(true)] }));
+
+    await store.load();
+
+    expect(store.accuracyByDeck()[0].league).toBeUndefined();
   });
 
   it('computes the best consecutive-correct streak per mode', async () => {

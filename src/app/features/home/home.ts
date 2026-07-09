@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import {
   Shield01Icon,
@@ -29,6 +29,7 @@ export class Home {
   private importService = inject(ImportService);
   private deckService = inject(DeckService);
   private leagueService = inject(LeagueService);
+  private route = inject(ActivatedRoute);
 
   readonly leagueConfigs = LEAGUES_TO_IMPORT;
   readonly decks = signal<Deck[]>([]);
@@ -49,6 +50,18 @@ export class Home {
 
   constructor() {
     this.refreshDecks();
+    this.restoreSelectionFromQueryParams();
+  }
+
+  private restoreSelectionFromQueryParams() {
+    const externalId = this.route.snapshot.queryParamMap.get('league');
+    if (!externalId) return;
+
+    const config = this.leagueConfigs.find(c => c.externalId === externalId);
+    if (!config) return;
+
+    this.selectedCountry.set(config.country);
+    this.selected.set(config);
   }
 
   deckForLeague(externalId: string): Deck | undefined {

@@ -1,8 +1,8 @@
 <header class="app-header">
   <div class="app-header__side">
-    <a routerLink="/" class="icon-btn" aria-label="Voltar">
+    <button type="button" class="icon-btn" aria-label="Voltar" (click)="back()">
       <hugeicons-icon [icon]="ArrowLeft01Icon" [size]="20" [strokeWidth]="1.8" color="currentColor" />
-    </a>
+    </button>
   </div>
   <div class="app-header__title">
     @switch (store.mode()) {
@@ -23,28 +23,30 @@
 
 <main class="screen">
   @if (!store.finished()) {
-    <div class="stat-row">
-      <div class="stat-chip">
-        <span class="stat-chip__value">{{ store.score() }}</span>
-        <span class="stat-chip__label">Pontos</span>
-      </div>
-      <div class="stat-chip stat-chip--streak">
-        <span class="stat-chip__value">
-          <hugeicons-icon [icon]="FireIcon" [size]="16" [strokeWidth]="1.8" color="var(--orange)" />
-          {{ store.streak() }}
-        </span>
-        <span class="stat-chip__label">Sequência</span>
-      </div>
-    </div>
-
     @if (store.current(); as question) {
-      @switch (store.mode()) {
-        @case ('reverse') {
-          <section class="card quiz-card">
+      <section class="card quiz-card">
+        <div class="quiz-card__stats">
+          <span class="pill pill--points" data-testid="score">{{ store.score() }} ponto(s)</span>
+          <span class="pill pill--streak" data-testid="streak">
+            <hugeicons-icon [icon]="FireIcon" [size]="13" [strokeWidth]="2" color="var(--orange)" />
+            {{ store.streak() }} sequência
+          </span>
+        </div>
+
+        @switch (store.mode()) {
+          @case ('reverse') {
             <p class="quiz-card__prompt">Qual é o escudo deste time?</p>
             <p class="team-name">{{ question.correctTeam.name }}</p>
-          </section>
+          }
+          @default {
+            <p class="quiz-card__prompt">Qual é o time deste escudo?</p>
+            <app-team-badge [team]="question.correctTeam" (loadFailed)="onBadgeLoadFailed(question, question.correctTeam.id)" />
+          }
+        }
+      </section>
 
+      @switch (store.mode()) {
+        @case ('reverse') {
           <div class="badge-grid">
             @for (option of question.options; track option.id) {
               <button
@@ -56,17 +58,12 @@
                 [disabled]="!!store.selectedTeamId()"
                 (click)="store.select(option.id)"
               >
-                <app-team-badge [team]="option" />
+                <app-team-badge [team]="option" (loadFailed)="onBadgeLoadFailed(question, option.id)" />
               </button>
             }
           </div>
         }
         @default {
-          <section class="card quiz-card">
-            <p class="quiz-card__prompt">Qual é o time deste escudo?</p>
-            <app-team-badge [team]="question.correctTeam" />
-          </section>
-
           <div class="option-grid">
             @for (option of question.options; track option.id) {
               <button
@@ -86,7 +83,12 @@
       }
 
       @if (store.selectedTeamId()) {
-        <button type="button" class="btn btn--primary" (click)="store.next()">Próxima</button>
+        <div class="auto-advance" role="status">
+          <span class="auto-advance__label">Próxima pergunta...</span>
+          <div class="auto-advance__track">
+            <div class="auto-advance__bar" [style.animation-duration.ms]="autoAdvanceDelayMs"></div>
+          </div>
+        </div>
       }
     }
   } @else {
@@ -95,7 +97,7 @@
       <p class="empty-state__subtitle">
         Pontuação: {{ store.score() }} · Melhor sequência: {{ store.bestStreak() }}
       </p>
-      <a routerLink="/" class="btn btn--primary">Voltar</a>
+      <button type="button" class="btn btn--primary" (click)="back()">Voltar</button>
     </section>
   }
 </main>

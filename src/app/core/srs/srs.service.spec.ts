@@ -84,4 +84,22 @@ describe('SrsService', () => {
     expect(state?.dueDate).toBe(addDays(today(), 1));
     expect(state?.lapses).toBe(1);
   });
+
+  it('shuffles the queue order instead of always presenting the same team first', async () => {
+    const manyTeams = Array.from({ length: 20 }, (_, i) => makeTeam(`ts-${i}`));
+    await db.teams.bulkPut(manyTeams);
+    const deck = await deckService.createLeagueDeck({
+      id: 'ts-4328',
+      externalIds: {},
+      name: 'Premier League',
+      country: 'England',
+      regionId: 'europe',
+      sport: 'soccer',
+    });
+
+    const insertionOrder = deck.teamIds;
+    const queue = await service.buildDailyQueue(deck.id);
+
+    expect(queue.map(t => t.id)).not.toEqual(insertionOrder);
+  });
 });
