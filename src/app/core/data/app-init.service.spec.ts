@@ -26,9 +26,9 @@ class FakeImage {
 describe('AppInitService', () => {
   const originalImage = globalThis.Image;
   let service: AppInitService;
-  let importServiceSpy: { importLeague: ReturnType<typeof vi.fn> };
-  let deckServiceSpy: { createLeagueDeck: ReturnType<typeof vi.fn>; getDeck: ReturnType<typeof vi.fn> };
-  let leagueServiceSpy: { getLeague: ReturnType<typeof vi.fn> };
+  let importServiceSpy: { importLeagues: ReturnType<typeof vi.fn> };
+  let deckServiceSpy: { getDeck: ReturnType<typeof vi.fn> };
+  let leagueServiceSpy: { getLeague: ReturnType<typeof vi.fn>; listLeagues: ReturnType<typeof vi.fn> };
   let dbSpy: { teams: { toArray: ReturnType<typeof vi.fn> } };
 
   const readyLeague: League = {
@@ -52,9 +52,9 @@ describe('AppInitService', () => {
     FakeImage.requestedUrls = [];
     (globalThis as unknown as { Image: typeof Image }).Image = FakeImage as unknown as typeof Image;
 
-    importServiceSpy = { importLeague: vi.fn() };
-    deckServiceSpy = { createLeagueDeck: vi.fn(), getDeck: vi.fn() };
-    leagueServiceSpy = { getLeague: vi.fn() };
+    importServiceSpy = { importLeagues: vi.fn().mockResolvedValue(undefined) };
+    deckServiceSpy = { getDeck: vi.fn() };
+    leagueServiceSpy = { getLeague: vi.fn(), listLeagues: vi.fn().mockResolvedValue([]) };
     dbSpy = { teams: { toArray: vi.fn().mockResolvedValue([]) } };
 
     TestBed.configureTestingModule({
@@ -72,14 +72,13 @@ describe('AppInitService', () => {
     globalThis.Image = originalImage;
   });
 
-  it('goes straight to ready when every league already has a league and a deck with teams', async () => {
+  it('does nothing when every league already has a league and a deck with teams', async () => {
     leagueServiceSpy.getLeague.mockResolvedValue(readyLeague);
     deckServiceSpy.getDeck.mockResolvedValue(readyDeck);
 
     await service.run();
 
-    expect(importServiceSpy.importLeague).not.toHaveBeenCalled();
-    expect(service.stage()).toEqual({ kind: 'ready' });
+    expect(importServiceSpy.importLeagues).not.toHaveBeenCalled();
   });
 
   it('imports only the leagues missing a league/deck', async () => {
@@ -89,23 +88,19 @@ describe('AppInitService', () => {
     deckServiceSpy.getDeck.mockImplementation((id: string) =>
       Promise.resolve(id === 'deck-league-ts-4328' ? readyDeck : undefined),
     );
-    importServiceSpy.importLeague.mockResolvedValue(readyLeague);
-    deckServiceSpy.createLeagueDeck.mockResolvedValue(readyDeck);
 
     await service.run();
 
-    expect(importServiceSpy.importLeague.mock.calls.length).toBeGreaterThan(0);
-    expect(importServiceSpy.importLeague).not.toHaveBeenCalledWith(
-      expect.objectContaining({ externalId: '4328' }),
-    );
-    expect(service.stage()).toEqual({ kind: 'ready' });
+    expect(importServiceSpy.importLeagues).toHaveBeenCalledTimes(1);
+    const [configs] = importServiceSpy.importLeagues.mock.calls[0];
+    expect(configs.some((config: { externalId: string }) => config.externalId === '4328')).toBe(false);
+    expect(configs.length).toBeGreaterThan(0);
   });
 
-  it('warms the badge cache for every imported league and its teams after importing', async () => {
+  it('warms the badge cache for every league and team after importing', async () => {
     leagueServiceSpy.getLeague.mockResolvedValue(undefined);
     deckServiceSpy.getDeck.mockResolvedValue(undefined);
-    importServiceSpy.importLeague.mockResolvedValue(readyLeague);
-    deckServiceSpy.createLeagueDeck.mockResolvedValue(readyDeck);
+    leagueServiceSpy.listLeagues.mockResolvedValue([readyLeague]);
     dbSpy.teams.toArray.mockResolvedValue([{ id: 'ts-4328-1', badgeUrl: 'https://example.com/arsenal.png' }]);
 
     await service.run();

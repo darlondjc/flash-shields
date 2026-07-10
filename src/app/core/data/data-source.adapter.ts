@@ -6,6 +6,8 @@ export interface ImportedTeam {
   country: string;
   badgeUrl: string;
   founded?: number;
+  stadium?: string;
+  website?: string;
 }
 
 export interface LeagueDetails {

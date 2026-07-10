@@ -16,6 +16,8 @@ interface TheSportsDbTeam {
   strBadge: string | null;
   intFormedYear: string | null;
   idLeague: string | null;
+  strStadium: string | null;
+  strWebsite: string | null;
 }
 
 interface TheSportsDbTeamsResponse {
@@ -146,5 +148,7 @@ function mapTeam(team: TheSportsDbTeam): ImportedTeam {
     country: team.strCountry ?? '',
     badgeUrl: team.strBadge ?? '',
     founded: team.intFormedYear ? Number(team.intFormedYear) : undefined,
+    stadium: team.strStadium ?? undefined,
+    website: team.strWebsite ?? undefined,
   };
 }

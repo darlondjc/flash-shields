@@ -13,5 +13,7 @@ export function mapImportedTeamToTeam(imported: ImportedTeam, leagueId: string):
     leagueIds: [leagueId],
     badgeUrl: imported.badgeUrl,
     founded: imported.founded,
+    stadium: imported.stadium,
+    website: imported.website,
   };
 }

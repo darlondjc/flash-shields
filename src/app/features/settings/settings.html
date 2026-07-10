@@ -29,7 +29,23 @@
   </section>
 
   <section aria-label="Dados locais" class="settings-section">
-    <p class="eyebrow">Dados locais</p>
+    <p class="eyebrow">Dados do usuário e importações</p>
+    @if (hasImportedLeagues()) {
+      <button
+        type="button"
+        class="secondary-action"
+        data-testid="refresh-imported-data"
+        [disabled]="importService.isImporting()"
+        (click)="refreshImportedData()"
+      >
+        <hugeicons-icon [icon]="RefreshIcon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+        @if (importService.isImporting()) {
+          Atualizando{{ importService.progress() ? ' (' + importService.progress()!.done + '/' + importService.progress()!.total + ')' : '' }}...
+        } @else {
+          Atualizar dados
+        }
+      </button>
+    }
     <button type="button" class="danger-action" data-testid="clear-local-data" (click)="clearLocalData()">
       <hugeicons-icon [icon]="Delete01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
       Limpar tudo e reiniciar

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { Home01Icon, Book01Icon, Quiz01Icon, Exchange01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
@@ -48,6 +48,15 @@ export class LeaguePicker {
   constructor() {
     this.refreshDecks();
     this.restoreSelectionFromQueryParams();
+
+    // Background imports (first-run boot import, or "Atualizar dados
+    // importados" from Configurações) tick ImportService.progress as each
+    // league lands, so this keeps the league/deck list live without the user
+    // needing to leave and come back to this screen.
+    effect(() => {
+      this.importService.progress();
+      void this.refreshDecks();
+    });
   }
 
   showsAction(action: LeaguePickerAction): boolean {

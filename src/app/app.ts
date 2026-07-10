@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Shield01Icon } from '@hugeicons/core-free-icons';
+import { Loading03Icon } from '@hugeicons/core-free-icons';
 import { ThemeService } from './core/theme/theme.service';
 import { AppInitService } from './core/data/app-init.service';
+import { ImportService } from './core/data/import.service';
+import { NotificationService } from './core/notifications/notification.service';
 
 @Component({
   selector: 'app-root',
@@ -17,9 +19,11 @@ export class App {
   // it) is what makes the theme apply app-wide from first paint, not just
   // after visiting /settings.
   private readonly theme = inject(ThemeService);
-  readonly appInit = inject(AppInitService);
+  private readonly appInit = inject(AppInitService);
+  readonly importService = inject(ImportService);
+  readonly notifications = inject(NotificationService);
 
-  readonly Shield01Icon = Shield01Icon;
+  readonly Loading03Icon = Loading03Icon;
 
   constructor() {
     void this.appInit.run();

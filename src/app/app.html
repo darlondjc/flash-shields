@@ -1,17 +1,17 @@
 <div class="app-shell">
-  @if (appInit.stage().kind === 'ready') {
-    <router-outlet />
-  } @else {
-    <div class="splash" data-testid="app-splash">
-      <span class="splash__badge">
-        <hugeicons-icon [icon]="Shield01Icon" [size]="36" [strokeWidth]="1.6" color="currentColor" />
+  @if (importService.isImporting()) {
+    <div class="import-banner" data-testid="import-banner" role="status">
+      <hugeicons-icon [icon]="Loading03Icon" [size]="16" [strokeWidth]="2" color="currentColor" class="import-banner__spinner" />
+      <span>
+        Importando dados...
+        @if (importService.progress(); as progress) {
+          {{ progress.done }}/{{ progress.total }}
+        }
       </span>
-      <p class="splash__title">Preparando o app...</p>
-      @if (appInit.stage().kind === 'importing') {
-        <p class="splash__status">Importando ligas... {{ $any(appInit.stage()).done }}/{{ $any(appInit.stage()).total }}</p>
-      } @else if (appInit.stage().kind === 'warming-badges') {
-        <p class="splash__status">Carregando escudos... {{ $any(appInit.stage()).done }}/{{ $any(appInit.stage()).total }}</p>
-      }
     </div>
   }
+  @if (notifications.message(); as message) {
+    <div class="toast" data-testid="app-toast" role="status">{{ message }}</div>
+  }
+  <router-outlet />
 </div>

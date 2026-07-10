@@ -9,4 +9,8 @@ export class LeagueService {
   getLeague(id: string): Promise<League | undefined> {
     return this.db.leagues.get(id);
   }
+
+  listLeagues(): Promise<League[]> {
+    return this.db.leagues.toArray();
+  }
 }

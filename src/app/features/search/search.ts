@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Home01Icon, Search01Icon, Exchange01Icon } from '@hugeicons/core-free-icons';
+import { Home01Icon, Search01Icon, ArrowLeft02Icon, Exchange01Icon } from '@hugeicons/core-free-icons';
 import { DeckService } from '../../core/decks/deck.service';
+import { ImportService } from '../../core/data/import.service';
 import { LeagueService } from '../../core/leagues/league.service';
 import { TeamService } from '../../core/leagues/team.service';
 import { countryOptions, leaguesForCountry, countryFlag, CountryOption } from '../../core/leagues/league-catalog';
@@ -26,14 +27,16 @@ const SEARCHABLE_LEAGUES = LEAGUES_TO_IMPORT.filter(config => !config.comingSoon
 })
 export class Search {
   private deckService = inject(DeckService);
+  private importService = inject(ImportService);
   private leagueService = inject(LeagueService);
   private teamService = inject(TeamService);
   private route = inject(ActivatedRoute);
 
   readonly Home01Icon = Home01Icon;
   readonly Search01Icon = Search01Icon;
+  readonly ArrowLeft02Icon = ArrowLeft02Icon;
   readonly Exchange01Icon = Exchange01Icon;
-
+  
   readonly query = signal('');
   readonly matchedLeagues = signal<LeagueImportConfig[] | null>(null);
   readonly selectedCountry = signal<string | null>(null);
@@ -46,6 +49,21 @@ export class Search {
   constructor() {
     this.refreshCatalog();
     void this.restoreFromQueryParams();
+
+    // Background imports (first-run boot import, or "Atualizar dados
+    // importados" from Configurações) tick ImportService.progress as each
+    // league lands, so this keeps the catalog — and the currently open
+    // league's team list, if any — live without a manual refresh.
+    effect(() => {
+      this.importService.progress();
+      void this.refreshCatalogAndCurrentLeague();
+    });
+  }
+
+  private async refreshCatalogAndCurrentLeague() {
+    await this.refreshCatalog();
+    const config = this.selectedLeagueConfig();
+    if (config) await this.openLeague(config);
   }
 
   private async refreshCatalog() {
@@ -147,6 +165,11 @@ export class Search {
   teamAge(team: Team): number | null {
     if (!team.founded) return null;
     return new Date().getFullYear() - team.founded;
+  }
+
+  teamWebsiteHref(team: Team): string {
+    const website = team.website ?? '';
+    return /^https?:\/\//i.test(website) ? website : `https://${website}`;
   }
 
   leagueNamesFor(team: Team): string[] {

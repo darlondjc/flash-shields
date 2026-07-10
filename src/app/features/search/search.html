@@ -9,17 +9,19 @@
 </header>
 
 <main class="screen">
-  <div class="search-bar">
-    <hugeicons-icon [icon]="Search01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
-    <input
-      type="search"
-      class="search-bar__input"
-      placeholder="Buscar time..."
-      data-testid="search-input"
-      [value]="query()"
-      (input)="onQueryChange($any($event.target).value)"
-    />
-  </div>
+  @if (!selectedTeam()) {
+    <div class="search-bar">
+      <hugeicons-icon [icon]="Search01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+      <input
+        type="search"
+        class="search-bar__input"
+        placeholder="Buscar time..."
+        data-testid="search-input"
+        [value]="query()"
+        (input)="onQueryChange($any($event.target).value)"
+      />
+    </div>
+  }
 
   @if (query().trim()) {
     <section aria-label="Resultado da busca">
@@ -48,8 +50,8 @@
   } @else if (selectedTeam(); as team) {
     <section aria-label="Detalhe do time">
       <button type="button" class="section-header__back" (click)="backToTeams()">
-        <hugeicons-icon [icon]="Exchange01Icon" [size]="16" [strokeWidth]="1.8" color="currentColor" />
-        Voltar aos times
+        <hugeicons-icon [icon]="ArrowLeft02Icon" [size]="16" [strokeWidth]="1.8" color="currentColor" />
+        Voltar à tela de pesquisa
       </button>
 
       <article class="card team-detail" data-testid="team-detail">
@@ -73,6 +75,18 @@
             <div>
               <dt>Liga(s)</dt>
               <dd>{{ leagueNamesFor(team).join(', ') }}</dd>
+            </div>
+          }
+          @if (team.stadium) {
+            <div>
+              <dt>Estádio</dt>
+              <dd>{{ team.stadium }}</dd>
+            </div>
+          }
+          @if (team.website) {
+            <div>
+              <dt>Site oficial</dt>
+              <dd><a [href]="teamWebsiteHref(team)" target="_blank" rel="noopener noreferrer">{{ team.website }}</a></dd>
             </div>
           }
           @if (team.alternateNames.length) {

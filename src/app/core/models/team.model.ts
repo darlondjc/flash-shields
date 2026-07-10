@@ -10,4 +10,6 @@ export interface Team {
   badgeLocalKey?: string;
   founded?: number;
   colors?: string;
+  stadium?: string;
+  website?: string;
 }
