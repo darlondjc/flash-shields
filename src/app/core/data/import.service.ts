@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { DbService } from '../persistence/db.service';
-import { TheSportsDbAdapter } from './thesportsdb.adapter';
+import { RemoteApiAdapter } from './remote-api.adapter';
 import { mapImportedTeamToTeam } from './team-mapper';
 import { LeagueImportConfig } from './league-import.config';
 import { currentSeason } from './season';
@@ -10,7 +10,7 @@ import { NotificationService } from '../notifications/notification.service';
 
 @Injectable({ providedIn: 'root' })
 export class ImportService {
-  private adapter = inject(TheSportsDbAdapter);
+  private adapter = inject(RemoteApiAdapter);
   private db = inject(DbService);
   private deckService = inject(DeckService);
   private notifications = inject(NotificationService);

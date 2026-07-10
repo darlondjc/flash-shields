@@ -47,6 +47,29 @@ Pesquisa feita em jul/2026. Estratégia: **importar uma vez e persistir localmen
 ### Camada de abstração
 Nunca acople a UI ao formato de uma API específica. Defina modelos próprios (`Team`, `League`, `Region`) e um `DataSourceAdapter` por provedor que traduz o payload externo para esses modelos. Assim é possível trocar/combinar fontes sem mexer no resto do app.
 
+### Backend próprio (Vercel + Firebase + Vercel Blob)
+O app **não** raspa mais a TheSportsDB no dispositivo do usuário — os rate
+limits apertados citados acima faziam a importação de todas as ligas levar
+minutos, repetido do zero em cada instalação. Em vez disso:
+
+- Uma function na Vercel (`api/cron/sync.ts`, disparada por Vercel Cron —
+  ver `crons` em `vercel.json`) raspa a TheSportsDB **uma vez** por ciclo e
+  grava o resultado no Firestore (ligas/times) e no Vercel Blob (escudos)
+  (orquestração em `api/_lib/sync.ts`). Firestore (não o Storage do Firebase)
+  porque o Firestore roda no plano gratuito Spark, sem cartão cadastrado; o
+  Storage do Firebase passou a exigir o plano pago Blaze — Vercel Blob cobre
+  o mesmo papel sem essa exigência.
+- O app lê dados prontos via `RemoteApiAdapter`
+  (`src/app/core/data/remote-api.adapter.ts`), que chama as rotas
+  `/api/leagues` e `/api/teams` na mesma origem — sem rate limit, sem
+  throttle client-side. `badgeUrl` aponta direto pro Vercel Blob (URLs
+  públicas já servidas com CORS liberado), então os escudos passam a ser
+  cacheáveis de verdade em IndexedDB (resolve o problema de CORS do CDN
+  original) sem precisar de uma rota de proxy própria.
+- `TheSportsDbAdapter` (o scraper original) continua existindo só como
+  caminho usado pela function de sync/populamento inicial do Firebase — o
+  `ImportService` do app não injeta mais ele diretamente.
+
 ### Observação legal
 Escudos são marcas registradas dos clubes. Uso educacional/estudo tende a ser de baixo risco; **redistribuição comercial de logos exige aprovação de marca.** Documente a fonte das imagens e considere um aviso de atribuição.
 

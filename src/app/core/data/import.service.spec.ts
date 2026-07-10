@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { ImportService } from './import.service';
 import { DbService } from '../persistence/db.service';
-import { TheSportsDbAdapter } from './thesportsdb.adapter';
+import { RemoteApiAdapter } from './remote-api.adapter';
 import { LeagueImportConfig } from './league-import.config';
 
 describe('ImportService', () => {
@@ -21,7 +21,7 @@ describe('ImportService', () => {
   beforeEach(async () => {
     adapterSpy = { fetchTeamsForLeague: vi.fn(), fetchLeagueDetails: vi.fn() };
     TestBed.configureTestingModule({
-      providers: [{ provide: TheSportsDbAdapter, useValue: adapterSpy }],
+      providers: [{ provide: RemoteApiAdapter, useValue: adapterSpy }],
     });
     service = TestBed.inject(ImportService);
     db = TestBed.inject(DbService);

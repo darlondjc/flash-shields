@@ -8,13 +8,16 @@ export class BadgeCacheService {
   private http = inject(HttpClient);
   private db = inject(DbService);
 
-  // Badge URLs we've already learned can't be XHR/fetch-ed into a Blob (typically a CORS-blocking
-  // CDN — TheSportsDB's r2.thesportsdb.com sends no Access-Control-Allow-Origin header, so this is
-  // every badge in practice). Session-scoped: once a URL fails here, retrying the exact same
-  // request will fail again every time (it's not transient), so we stop attempting it and go
-  // straight to the <img>-tag fallback, which loads the same cross-origin image fine — browsers
-  // only block *reading* the bytes via script, not rendering them. Without this, every single
-  // badge render re-attempts and re-fails the same doomed fetch.
+  // Badge URLs we've already learned can't be XHR/fetch-ed into a Blob (a CORS-blocking CDN —
+  // used to be every badge in practice back when badgeUrl pointed straight at TheSportsDB's
+  // r2.thesportsdb.com, which sends no Access-Control-Allow-Origin header; badges now come from
+  // Vercel Blob, which does send CORS headers on public blobs, so this should be rare going
+  // forward). Session-scoped:
+  // once a URL fails here, retrying the exact same request will fail again every time (it's not
+  // transient), so we stop attempting it and go straight to the <img>-tag fallback, which loads
+  // the same cross-origin image fine — browsers only block *reading* the bytes via script, not
+  // rendering them. Without this, every single badge render re-attempts and re-fails the same
+  // doomed fetch.
   private uncacheableUrls = new Set<string>();
 
   // key must be unique across every caller (teams and leagues share this cache/table), so
@@ -41,13 +44,12 @@ export class BadgeCacheService {
       await this.db.badgeBlobs.put({ key, blob });
       return URL.createObjectURL(blob);
     } catch (err) {
-      // Some third-party badge CDNs (e.g. TheSportsDB's) don't send CORS headers, so a
-      // browser-side XHR/fetch blob download is blocked and can never be cached locally.
-      // Fall back to the remote URL directly so the badge still renders; it just won't be
-      // available for offline reuse. Log with enough context (cache key, underlying error) so
-      // this is distinguishable from other failures in this block, e.g. a `db.badgeBlobs.put`
-      // write failure (IndexedDB quota, private browsing) — both used to fail silently the
-      // same way, which is how the CORS issue went unnoticed for three prior tasks.
+      // Some third-party badge CDNs don't send CORS headers, so a browser-side XHR/fetch blob
+      // download is blocked and can never be cached locally. Fall back to the remote URL
+      // directly so the badge still renders; it just won't be available for offline reuse. Log
+      // with enough context (cache key, underlying error) so this is distinguishable from other
+      // failures in this block, e.g. a `db.badgeBlobs.put` write failure (IndexedDB quota,
+      // private browsing).
       this.uncacheableUrls.add(badgeUrl);
       console.warn(`BadgeCacheService: falling back to remote URL for ${key} (fetch/cache failed)`, err);
       return badgeUrl;
