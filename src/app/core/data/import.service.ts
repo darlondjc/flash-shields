@@ -3,6 +3,7 @@ import { DbService } from '../persistence/db.service';
 import { TheSportsDbAdapter } from './thesportsdb.adapter';
 import { mapImportedTeamToTeam } from './team-mapper';
 import { LeagueImportConfig } from './league-import.config';
+import { currentSeason } from './season';
 import { League } from '../models/league.model';
 
 @Injectable({ providedIn: 'root' })
@@ -25,10 +26,7 @@ export class ImportService {
     };
     await this.db.leagues.put(league);
 
-    // O time é buscado pelo nome canônico da liga na TheSportsDB (strLeague),
-    // não pelo externalId: com a chave de teste gratuita, buscar por id sempre
-    // devolve a mesma amostra fixa de times, ignorando a liga selecionada.
-    const importedTeams = await this.adapter.fetchTeamsForLeague(details.name ?? config.name);
+    const importedTeams = await this.adapter.fetchTeamsForLeague(config.externalId, currentSeason(config.regionId));
     this.progress.set({ done: 0, total: importedTeams.length });
 
     for (const [index, imported] of importedTeams.entries()) {

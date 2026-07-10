@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, effect, DestroyRef }
 import { Router, ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { ArrowLeft01Icon, FireIcon } from '@hugeicons/core-free-icons';
+import { Home01Icon, FireIcon } from '@hugeicons/core-free-icons';
 import { map } from 'rxjs/operators';
 import { GameMode } from '../../core/models/session.model';
 import { GameStore } from './game.store';
@@ -24,7 +24,7 @@ export class Game {
   private router = inject(Router);
   readonly deckId = input.required<string>();
 
-  readonly ArrowLeft01Icon = ArrowLeft01Icon;
+  readonly Home01Icon = Home01Icon;
   readonly FireIcon = FireIcon;
   readonly autoAdvanceDelayMs = AUTO_ADVANCE_DELAY_MS;
 
@@ -33,7 +33,6 @@ export class Game {
     { initialValue: 'multiple-choice' as GameMode },
   );
 
-  private readonly returnLeagueId = this.route.snapshot.queryParamMap.get('league');
   private autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
@@ -71,7 +70,7 @@ export class Game {
     if (sessionInProgress && !confirm('Sair do jogo? A pontuação desta partida será perdida.')) {
       return;
     }
-    this.router.navigate(['/'], { queryParams: this.returnLeagueId ? { league: this.returnLeagueId } : {} });
+    this.router.navigate(['/']);
   }
 
   optionState(optionId: string, correctTeamId: string): 'correct' | 'incorrect' | 'neutral' {

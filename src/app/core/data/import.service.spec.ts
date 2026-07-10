@@ -30,7 +30,7 @@ describe('ImportService', () => {
   });
 
   it('creates the league and upserts its teams', async () => {
-    adapterSpy.fetchLeagueDetails.mockResolvedValue({ name: 'English Premier League', badgeUrl: undefined });
+    adapterSpy.fetchLeagueDetails.mockResolvedValue({ badgeUrl: undefined });
     adapterSpy.fetchTeamsForLeague.mockResolvedValue([
       {
         externalId: '1',
@@ -50,26 +50,17 @@ describe('ImportService', () => {
     expect(team?.leagueIds).toEqual(['ts-4328']);
   });
 
-  it('fetches teams by the canonical league name from the adapter, not the external id', async () => {
-    adapterSpy.fetchLeagueDetails.mockResolvedValue({ name: 'English Premier League', badgeUrl: undefined });
+  it('fetches teams by external id and the current season, not by league name', async () => {
+    adapterSpy.fetchLeagueDetails.mockResolvedValue({ badgeUrl: undefined });
     adapterSpy.fetchTeamsForLeague.mockResolvedValue([]);
 
     await service.importLeague(config);
 
-    expect(adapterSpy.fetchTeamsForLeague).toHaveBeenCalledWith('English Premier League');
-  });
-
-  it('falls back to the configured display name when the adapter has no canonical league name', async () => {
-    adapterSpy.fetchLeagueDetails.mockResolvedValue({ name: undefined, badgeUrl: undefined });
-    adapterSpy.fetchTeamsForLeague.mockResolvedValue([]);
-
-    await service.importLeague(config);
-
-    expect(adapterSpy.fetchTeamsForLeague).toHaveBeenCalledWith('Premier League');
+    expect(adapterSpy.fetchTeamsForLeague).toHaveBeenCalledWith('4328', expect.any(String));
   });
 
   it('is idempotent: re-importing does not duplicate teams', async () => {
-    adapterSpy.fetchLeagueDetails.mockResolvedValue({ name: 'English Premier League', badgeUrl: undefined });
+    adapterSpy.fetchLeagueDetails.mockResolvedValue({ badgeUrl: undefined });
     adapterSpy.fetchTeamsForLeague.mockResolvedValue([
       {
         externalId: '1',
@@ -88,9 +79,7 @@ describe('ImportService', () => {
   });
 
   it('keeps imported teams scoped to the current league when importing another one later', async () => {
-    adapterSpy.fetchLeagueDetails
-      .mockResolvedValueOnce({ name: 'English Premier League', badgeUrl: undefined })
-      .mockResolvedValueOnce({ name: 'Spanish La Liga', badgeUrl: undefined });
+    adapterSpy.fetchLeagueDetails.mockResolvedValue({ badgeUrl: undefined });
     adapterSpy.fetchTeamsForLeague
       .mockResolvedValueOnce([
         { externalId: '1', name: 'Arsenal', alternateNames: [], country: 'England', badgeUrl: 'https://example.com/a.png' },
@@ -102,8 +91,8 @@ describe('ImportService', () => {
     await service.importLeague({ ...config, externalId: '4328', name: 'Premier League', country: 'Inglaterra' });
     await service.importLeague({ ...config, externalId: '4335', name: 'La Liga', country: 'Espanha' });
 
-    expect(adapterSpy.fetchTeamsForLeague).toHaveBeenNthCalledWith(1, 'English Premier League');
-    expect(adapterSpy.fetchTeamsForLeague).toHaveBeenNthCalledWith(2, 'Spanish La Liga');
+    expect(adapterSpy.fetchTeamsForLeague).toHaveBeenNthCalledWith(1, '4328', expect.any(String));
+    expect(adapterSpy.fetchTeamsForLeague).toHaveBeenNthCalledWith(2, '4335', expect.any(String));
 
     const firstTeam = await db.teams.get('ts-4328-1');
     const secondTeam = await db.teams.get('ts-4335-2');
@@ -115,7 +104,6 @@ describe('ImportService', () => {
   it('stores the league badge fetched from the adapter', async () => {
     adapterSpy.fetchTeamsForLeague.mockResolvedValue([]);
     adapterSpy.fetchLeagueDetails.mockResolvedValue({
-      name: 'English Premier League',
       badgeUrl: 'https://example.com/premier-league-badge.png',
     });
 
@@ -128,7 +116,7 @@ describe('ImportService', () => {
 
   it('leaves badgeUrl undefined when the adapter has no badge for the league', async () => {
     adapterSpy.fetchTeamsForLeague.mockResolvedValue([]);
-    adapterSpy.fetchLeagueDetails.mockResolvedValue({ name: 'English Premier League', badgeUrl: undefined });
+    adapterSpy.fetchLeagueDetails.mockResolvedValue({ badgeUrl: undefined });
 
     const league = await service.importLeague(config);
 

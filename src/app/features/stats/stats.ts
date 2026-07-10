@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, PendingTasks } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { ArrowLeft01Icon } from '@hugeicons/core-free-icons';
+import { Home01Icon } from '@hugeicons/core-free-icons';
 import { StatsStore } from './stats.store';
 import { GameMode } from '../../core/models/session.model';
 import { LeagueBadge } from '../../shared/ui/league-badge';
@@ -17,7 +17,7 @@ export class Stats {
   readonly store = inject(StatsStore);
   private readonly pendingTasks = inject(PendingTasks);
 
-  readonly ArrowLeft01Icon = ArrowLeft01Icon;
+  readonly Home01Icon = Home01Icon;
 
   constructor() {
     // Runs load() inside a PendingTasks block so Angular's zoneless stability

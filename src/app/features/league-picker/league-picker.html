@@ -1,0 +1,159 @@
+<header class="app-header">
+  <div class="app-header__side">
+    <a routerLink="/" class="icon-btn" aria-label="Início">
+      <hugeicons-icon [icon]="Home01Icon" [size]="20" [strokeWidth]="1.8" color="currentColor" />
+    </a>
+  </div>
+  <div class="app-header__title">{{ title() }}</div>
+  <div class="app-header__side"></div>
+</header>
+
+<main class="screen">
+  @if (error()) {
+    <p class="alert" role="alert">{{ error() }}</p>
+  }
+
+  <section aria-label="Ligas disponíveis">
+    <div class="section-header">
+      <p class="eyebrow">{{ selected() ? 'Liga selecionada' : (selectedCountry() ? 'Selecione uma liga/torneio' : 'Selecione um país') }}</p>
+      @if (selectedCountry() && !selected()) {
+        <button type="button" class="section-header__back" (click)="backToCountries()">
+          <hugeicons-icon [icon]="Exchange01Icon" [size]="16" [strokeWidth]="1.8" color="currentColor" />
+          Trocar país
+        </button>
+      }
+      @if (selected()) {
+        <button type="button" class="section-header__back" (click)="backToLeagues()">
+          <hugeicons-icon [icon]="Exchange01Icon" [size]="16" [strokeWidth]="1.8" color="currentColor" />
+          Trocar liga
+        </button>
+      }
+    </div>
+
+    @if (!selectedCountry()) {
+      <div class="league-list league-list--countries">
+        @for (country of countryOptions(); track country.name) {
+          <button
+            type="button"
+            class="card league-card league-card--selectable league-card--country"
+            data-testid="select-country"
+            (click)="selectCountry(country.name)"
+          >
+            <span class="league-card__flag" [attr.aria-label]="country.name">{{ country.flag }}</span>
+            <div class="league-card__info">
+              <p class="league-card__name">{{ country.name }}</p>
+              <p class="league-card__meta">{{ country.count }} {{ country.count === 1 ? 'torneio' : 'torneios' }}</p>
+            </div>
+          </button>
+        }
+      </div>
+    } @else if (!selected()) {
+      <div class="league-list league-list--single-column">
+        @for (config of leaguesForCountry(selectedCountry()!); track config.externalId) {
+          @let leagueDeck = deckForLeague(config.externalId);
+          <button
+            type="button"
+            class="card league-card league-card--selectable"
+            data-testid="select-league"
+            [disabled]="importingId() === config.externalId"
+            (click)="selectLeague(config)"
+          >
+            <div class="league-card__header">
+              @if (leagueFor(config.externalId); as league) {
+                <span class="league-card__badge">
+                  <app-league-badge [league]="league" />
+                </span>
+              }
+              <div class="league-card__info">
+                <p class="league-card__name">{{ config.name }}</p>
+                <p class="league-card__meta">{{ config.country }}</p>
+              </div>
+              <span class="league-card__flag" [attr.aria-label]="config.country">{{ countryFlag(config.country) }}</span>
+            </div>
+            <div class="league-card__footer">
+              @if (config.comingSoon) {
+                <span class="pill">Em breve</span>
+              } @else if (leagueDeck) {
+                <span class="pill pill--success">Pronta para jogar</span>
+              } @else {
+                <span class="pill">Ainda não importada</span>
+              }
+              <span class="league-card__cta" [attr.aria-label]="config.comingSoon ? 'Em breve' : (importingId() === config.externalId ? 'Importando' : 'Selecionar')">
+                @if (config.comingSoon) {
+                  <span>Em breve</span>
+                } @else if (importingId() === config.externalId) {
+                  <span>Importando...</span>
+                } @else {
+                  <hugeicons-icon [icon]="CheckmarkCircle02Icon" [size]="16" [strokeWidth]="2" color="currentColor" />
+                }
+              </span>
+            </div>
+          </button>
+        }
+      </div>
+    } @else {
+      @let selectedConfig = selected()!;
+      <article class="card league-card league-card--selected">
+        <div class="league-card__header">
+          @if (selectedLeague(); as league) {
+            <span class="league-card__badge">
+              <app-league-badge [league]="league" />
+            </span>
+          }
+          <div class="league-card__info">
+            <p class="league-card__name">{{ selectedConfig.name }}</p>
+            <p class="league-card__meta">{{ selectedConfig.country }}</p>
+          </div>
+          <span class="league-card__flag" [attr.aria-label]="selectedConfig.country">{{ countryFlag(selectedConfig.country) }}</span>
+        </div>
+
+        @if (selectedDeck(); as deck) {
+          <div class="league-card__actions">
+            @if (showsAction('study')) {
+              <a class="deck-row" data-testid="study-link" [routerLink]="['/study', deck.id]">
+                <span class="deck-row__icon deck-row__icon--green">
+                  <hugeicons-icon [icon]="Book01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+                </span>
+                <span class="deck-row__text">
+                  <span class="deck-row__title">Estudar</span>
+                  <span class="deck-row__subtitle">{{ deck.teamIds.length }} times · revisão espaçada</span>
+                </span>
+                <span class="deck-row__chevron">›</span>
+              </a>
+            }
+
+            @if (showsAction('play')) {
+              <a class="deck-row" data-testid="game-link" [routerLink]="['/game', deck.id]">
+                <span class="deck-row__icon deck-row__icon--blue">
+                  <hugeicons-icon [icon]="Quiz01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+                </span>
+                <span class="deck-row__text">
+                  <span class="deck-row__title">Múltipla escolha</span>
+                  <span class="deck-row__subtitle">Jogar agora</span>
+                </span>
+                <span class="deck-row__chevron">›</span>
+              </a>
+            }
+
+            @if (showsAction('reverse')) {
+              <a class="deck-row" data-testid="reverse-link" [routerLink]="['/game', deck.id]" [queryParams]="{ mode: 'reverse' }">
+                <span class="deck-row__icon deck-row__icon--purple">
+                  <hugeicons-icon [icon]="Quiz01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+                </span>
+                <span class="deck-row__text">
+                  <span class="deck-row__title">Reverso</span>
+                  <span class="deck-row__subtitle">Escolha o escudo</span>
+                </span>
+                <span class="deck-row__chevron">›</span>
+              </a>
+            }
+          </div>
+        } @else if (importingId() === selectedConfig.externalId) {
+          <p class="league-card__status">Estamos preparando seu baralho para você começar.</p>
+        } @else {
+          <p class="league-card__status">Selecione novamente para importar esta liga.</p>
+        }
+      </article>
+    }
+  </section>
+</main>

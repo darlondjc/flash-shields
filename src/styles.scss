@@ -222,8 +222,239 @@ button {
 .screen {
   max-width: 480px;
   margin: 0 auto;
-  padding: 1.25rem 1.25rem 6rem;
+  padding: 1.25rem 1.25rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+/* País/liga picker + deck action rows — shared by the league picker
+   (/estudo, /jogos) and the search screen (/pesquisa). */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  gap: 0.75rem;
+}
+
+.section-header__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0;
+  cursor: pointer;
+}
+
+.league-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.league-list--single-column {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 720px) {
+  .league-list:not(.league-list--countries) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.league-card {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.95rem;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.league-card--selectable {
+  width: 100%;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: var(--green);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.league-card--selected {
+  gap: 1.1rem;
+}
+
+.league-card--country {
+  gap: 0.65rem;
+  padding: 0.9rem 0.85rem;
+}
+
+.league-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.league-card__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--badge-chip-bg);
+  overflow: hidden;
+
+  app-league-badge {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.league-card__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.league-card__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.league-card__meta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.league-card__flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.league-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.28rem 0.6rem;
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.pill--success {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.league-card__cta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.league-card__status {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.league-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.deck-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: var(--surface-header);
+  }
+}
+
+.deck-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.deck-row__icon--green {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.deck-row__icon--blue {
+  background: var(--blue-dim);
+  color: var(--blue);
+}
+
+.deck-row__icon--purple {
+  background: var(--purple-dim);
+  color: var(--purple);
+}
+
+.deck-row__text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.deck-row__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.deck-row__subtitle {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.deck-row__chevron {
+  color: var(--text-muted);
+  font-size: 1.2rem;
 }

@@ -36,7 +36,7 @@
 **Interfaces:**
 - Produces: no new files. `study.back()`/`game.back()` simplified to `this.router.navigate(['/'])` (no query params) — nothing downstream in this plan calls these methods with an expectation of query params.
 
-- [ ] **Step 1: Update the failing/changed test for the app shell**
+- [x] **Step 1: Update the failing/changed test for the app shell**
 
 Replace the bottom-nav test in `src/app/app.spec.ts` with one that asserts it's gone:
 
@@ -67,12 +67,12 @@ describe('App', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 Run: `npx ng test --include='src/app/app.spec.ts' --watch=false`
 Expected: FAIL — `.bottom-nav` still renders.
 
-- [ ] **Step 3: Remove the bottom nav from the app shell**
+- [x] **Step 3: Remove the bottom nav from the app shell**
 
 Replace `src/app/app.html` with:
 
@@ -136,12 +136,12 @@ In `src/styles.scss`, shrink the now-unneeded bottom clearance on `.screen` (it 
 }
 ```
 
-- [ ] **Step 4: Run it to confirm it passes**
+- [x] **Step 4: Run it to confirm it passes**
 
 Run: `npx ng test --include='src/app/app.spec.ts' --watch=false`
 Expected: PASS
 
-- [ ] **Step 5: Swap the header icon to Home in Study, Game, Stats, Settings**
+- [x] **Step 5: Swap the header icon to Home in Study, Game, Stats, Settings**
 
 `src/app/features/study/study.ts` — replace the `ArrowLeft01Icon` import/field and simplify `back()`:
 
@@ -317,7 +317,7 @@ This requires `stats.ts` to import `Home01Icon` instead of `ArrowLeft01Icon` (mi
 
 `src/app/features/settings/settings.html` — same anchor swap; `settings.ts` swaps `ArrowLeft01Icon` → `Home01Icon` the same way (keep `Delete01Icon`, that one is unrelated to this task).
 
-- [ ] **Step 6: Run the full unit test suite**
+- [x] **Step 6: Run the full unit test suite**
 
 Run: `npx ng test --watch=false`
 Expected: PASS (no test asserted on the old `ArrowLeft01Icon`/"Voltar" label, confirmed by grep before writing this plan)
@@ -344,7 +344,7 @@ git commit -m "refactor: remove bottom nav, use Home icon as the top-bar back ac
 **Interfaces:**
 - Produces: `countryOptions(configs: LeagueImportConfig[]): CountryOption[]`, `leaguesForCountry(configs: LeagueImportConfig[], country: string): LeagueImportConfig[]`, `countryFlag(country: string): string`, and the `CountryOption` interface (`{ name: string; flag: string; count: number }`). Consumed by `LeaguePicker` (Task 5) and `Search` (Task 6).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import { countryOptions, leaguesForCountry, countryFlag } from './league-catalog';
@@ -382,12 +382,12 @@ describe('league-catalog', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 Run: `npx ng test --include='src/app/core/leagues/league-catalog.spec.ts' --watch=false`
 Expected: FAIL — `league-catalog.ts` doesn't exist yet.
 
-- [ ] **Step 3: Implement it**
+- [x] **Step 3: Implement it**
 
 ```typescript
 import { LeagueImportConfig } from '../data/league-import.config';
@@ -434,7 +434,7 @@ export function leaguesForCountry(configs: LeagueImportConfig[], country: string
 }
 ```
 
-- [ ] **Step 4: Run it to confirm it passes**
+- [x] **Step 4: Run it to confirm it passes**
 
 Run: `npx ng test --include='src/app/core/leagues/league-catalog.spec.ts' --watch=false`
 Expected: PASS
@@ -458,7 +458,7 @@ git commit -m "refactor: extract país→liga grouping into a shared league-cata
 - Consumes: `DbService.teams` (existing Dexie table, `Table<Team, string>`).
 - Produces: `TeamService.getTeam(id: string): Promise<Team | undefined>`, `TeamService.searchByName(query: string): Promise<Team[]>`. Consumed by `Search` (Tasks 6) and `AppInitService` is not a consumer (it reads `db.teams` directly for badge warming, see Task 9).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import 'fake-indexeddb/auto';
@@ -522,12 +522,12 @@ describe('TeamService', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 Run: `npx ng test --include='src/app/core/leagues/team.service.spec.ts' --watch=false`
 Expected: FAIL — `team.service.ts` doesn't exist yet.
 
-- [ ] **Step 3: Implement it**
+- [x] **Step 3: Implement it**
 
 ```typescript
 import { Injectable, inject } from '@angular/core';
@@ -556,7 +556,7 @@ export class TeamService {
 }
 ```
 
-- [ ] **Step 4: Run it to confirm it passes**
+- [x] **Step 4: Run it to confirm it passes**
 
 Run: `npx ng test --include='src/app/core/leagues/team.service.spec.ts' --watch=false`
 Expected: PASS
@@ -579,7 +579,7 @@ git commit -m "feat: add TeamService with get-by-id and search-by-name"
 **Interfaces:**
 - Produces: `warmImageCache(urls: string[], options?: WarmImageCacheOptions): Promise<void>`, `WarmImageCacheOptions { timeoutMs?: number; onProgress?: (done: number, total: number) => void }`. Consumed by `AppInitService` (Task 9).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import { vi } from 'vitest';
@@ -665,12 +665,12 @@ describe('warmImageCache', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 Run: `npx ng test --include='src/app/core/persistence/badge-warmer.spec.ts' --watch=false`
 Expected: FAIL — `badge-warmer.ts` doesn't exist yet.
 
-- [ ] **Step 3: Implement it**
+- [x] **Step 3: Implement it**
 
 ```typescript
 const DEFAULT_TIMEOUT_MS = 5000;
@@ -724,7 +724,7 @@ function warmOne(url: string, timeoutMs: number): Promise<void> {
 }
 ```
 
-- [ ] **Step 4: Run it to confirm it passes**
+- [x] **Step 4: Run it to confirm it passes**
 
 Run: `npx ng test --include='src/app/core/persistence/badge-warmer.spec.ts' --watch=false`
 Expected: PASS
@@ -752,7 +752,7 @@ git commit -m "feat: add warmImageCache to prime the browser's HTTP cache for ba
 - Consumes: `countryOptions`/`leaguesForCountry`/`countryFlag` from `league-catalog.ts` (Task 2); existing `ImportService`, `DeckService`, `LeagueService`.
 - Produces: `LeaguePicker` component with signal inputs `actions = input<LeaguePickerAction[]>(['study', 'play', 'reverse'])` and `title = input('Selecionar liga')`, type `LeaguePickerAction = 'study' | 'play' | 'reverse'`. Routes `/estudo` and `/jogos` bind `data.actions`/`data.title` to these inputs via `withComponentInputBinding()` (already enabled in `app.config.ts`).
 
-- [ ] **Step 1: Add the shared país/liga/deck-row CSS to `styles.scss`**
+- [x] **Step 1: Add the shared país/liga/deck-row CSS to `styles.scss`**
 
 Append to the end of `src/styles.scss` (copied as-is from `home.scss` — this is a copy, not a move, so the still-unmodified `home.scss` keeps working until Task 8 rewrites it and drops its own copy):
 
@@ -989,7 +989,7 @@ Append to the end of `src/styles.scss` (copied as-is from `home.scss` — this i
 }
 ```
 
-- [ ] **Step 2: Write the failing test for `LeaguePicker`**
+- [x] **Step 2: Write the failing test for `LeaguePicker`**
 
 ```typescript
 import { vi } from 'vitest';
@@ -1088,12 +1088,12 @@ describe('LeaguePicker', () => {
 });
 ```
 
-- [ ] **Step 3: Run it to confirm it fails**
+- [x] **Step 3: Run it to confirm it fails**
 
 Run: `npx ng test --include='src/app/features/league-picker/league-picker.spec.ts' --watch=false`
 Expected: FAIL — `league-picker.ts` doesn't exist yet.
 
-- [ ] **Step 4: Implement `LeaguePicker`**
+- [x] **Step 4: Implement `LeaguePicker`**
 
 ```typescript
 import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
@@ -1430,12 +1430,12 @@ Create `src/app/features/league-picker/league-picker.html`:
 </main>
 ```
 
-- [ ] **Step 5: Run it to confirm it passes**
+- [x] **Step 5: Run it to confirm it passes**
 
 Run: `npx ng test --include='src/app/features/league-picker/league-picker.spec.ts' --watch=false`
 Expected: PASS
 
-- [ ] **Step 6: Wire the routes**
+- [x] **Step 6: Wire the routes**
 
 Update `src/app/app.routes.ts`:
 
@@ -1489,7 +1489,7 @@ describe('routes', () => {
 });
 ```
 
-- [ ] **Step 7: Run the full unit test suite**
+- [x] **Step 7: Run the full unit test suite**
 
 Run: `npx ng test --watch=false`
 Expected: PASS
@@ -1515,7 +1515,7 @@ git commit -m "feat: add LeaguePicker component and wire /estudo, /jogos routes"
 - Consumes: `countryOptions`/`leaguesForCountry`/`countryFlag` (Task 2), `TeamService.getTeam`/`searchByName` (Task 3), existing `DeckService.listDecks`, `LeagueService.getLeague`.
 - Produces: `Search` component, routed at `/pesquisa` (wired in Task 8 alongside the Home rewrite, since both touch `app.routes.ts`'s remaining gap).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import { vi } from 'vitest';
@@ -1635,12 +1635,12 @@ describe('Search', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 Run: `npx ng test --include='src/app/features/search/search.spec.ts' --watch=false`
 Expected: FAIL — `search.ts` doesn't exist yet.
 
-- [ ] **Step 3: Implement `Search`**
+- [x] **Step 3: Implement `Search`**
 
 ```typescript
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
@@ -2094,7 +2094,7 @@ Create `src/app/features/search/search.scss`:
 }
 ```
 
-- [ ] **Step 4: Run it to confirm it passes**
+- [x] **Step 4: Run it to confirm it passes**
 
 Run: `npx ng test --include='src/app/features/search/search.spec.ts' --watch=false`
 Expected: PASS
@@ -2121,7 +2121,7 @@ git commit -m "feat: add Search feature (país→liga→times→detalhe do time)
 **Interfaces:**
 - Produces: `Home` component with a plain `cards: HomeCard[]` array (no signals needed — static data), linking to `/estudo`, `/jogos`, `/stats`, `/pesquisa`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Replace `src/app/features/home/home.spec.ts` with:
 
@@ -2156,12 +2156,12 @@ describe('Home', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 Run: `npx ng test --include='src/app/features/home/home.spec.ts' --watch=false`
 Expected: FAIL — the current `Home` still renders the país/liga picker, not these test ids.
 
-- [ ] **Step 3: Rewrite `Home`**
+- [x] **Step 3: Rewrite `Home`**
 
 Replace `src/app/features/home/home.ts`:
 
@@ -2308,12 +2308,12 @@ Replace `src/app/features/home/home.scss` (drops the país/liga/deck-row rules n
 }
 ```
 
-- [ ] **Step 4: Run it to confirm it passes**
+- [x] **Step 4: Run it to confirm it passes**
 
 Run: `npx ng test --include='src/app/features/home/home.spec.ts' --watch=false`
 Expected: PASS
 
-- [ ] **Step 5: Wire `/pesquisa`**
+- [x] **Step 5: Wire `/pesquisa`**
 
 Add to `src/app/app.routes.ts`, right after the `jogos` route:
 
@@ -2337,7 +2337,7 @@ describe('routes', () => {
 });
 ```
 
-- [ ] **Step 6: Run the full unit test suite**
+- [x] **Step 6: Run the full unit test suite**
 
 Run: `npx ng test --watch=false`
 Expected: PASS
@@ -2365,7 +2365,7 @@ git commit -m "feat: rewrite Home as a 4-card menu and wire /pesquisa"
 - Consumes: existing `ImportService.importLeague`, `DeckService.createLeagueDeck`/`getDeck`, `LeagueService.getLeague`, `DbService.teams`; `warmImageCache` from Task 4.
 - Produces: `AppInitService.stage: Signal<AppInitStage>`, `AppInitService.run(): Promise<void>`, `AppInitStage = { kind: 'importing'; done: number; total: number } | { kind: 'warming-badges'; done: number; total: number } | { kind: 'ready' }`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```typescript
 import { vi } from 'vitest';
@@ -2480,12 +2480,12 @@ describe('AppInitService', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to confirm it fails**
+- [x] **Step 2: Run it to confirm it fails**
 
 Run: `npx ng test --include='src/app/core/data/app-init.service.spec.ts' --watch=false`
 Expected: FAIL — `app-init.service.ts` doesn't exist yet.
 
-- [ ] **Step 3: Implement `AppInitService`**
+- [x] **Step 3: Implement `AppInitService`**
 
 ```typescript
 import { Injectable, inject, signal } from '@angular/core';
@@ -2567,12 +2567,12 @@ export class AppInitService {
 }
 ```
 
-- [ ] **Step 4: Run it to confirm it passes**
+- [x] **Step 4: Run it to confirm it passes**
 
 Run: `npx ng test --include='src/app/core/data/app-init.service.spec.ts' --watch=false`
 Expected: PASS
 
-- [ ] **Step 5: Gate the app shell behind the splash**
+- [x] **Step 5: Gate the app shell behind the splash**
 
 Replace `src/app/app.ts`:
 
@@ -2704,7 +2704,7 @@ describe('App', () => {
 });
 ```
 
-- [ ] **Step 6: Run the full unit test suite**
+- [x] **Step 6: Run the full unit test suite**
 
 Run: `npx ng test --watch=false`
 Expected: PASS
@@ -2727,7 +2727,7 @@ git commit -m "feat: add AppInitService and gate the app behind a boot-time impo
 **Interfaces:**
 - Consumes: routes `/estudo`, `/jogos`, `/pesquisa` (Tasks 5, 7); `data-testid`s `select-country`, `select-league`, `select-team`, `team-detail`, `home-estudo`, `home-jogos`, `home-pesquisa`.
 
-- [ ] **Step 1: Update the existing flow to go through `/estudo` and `/jogos`**
+- [x] **Step 1: Update the existing flow to go through `/estudo` and `/jogos`**
 
 Replace `e2e/mvp-flow.spec.ts`:
 
@@ -2801,7 +2801,7 @@ test('browse Pesquisa down to a team detail screen', async ({ page }) => {
 });
 ```
 
-- [ ] **Step 2: Run the e2e suite**
+- [x] **Step 2: Run the e2e suite**
 
 Run: `npx playwright test`
 Expected: PASS (all three tests). If the boot-time import splash extends overall run time, the existing per-assertion `timeout: 30_000` values already give it room; if a run is flaky on first execution, note it and re-run once, since the app's own IndexedDB persists between the two `page.goto('/')` calls within a test but Playwright starts each `test(...)` with a fresh browser context, meaning `AppInitService` re-imports from scratch every test.

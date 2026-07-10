@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { ArrowLeft01Icon, Delete01Icon } from '@hugeicons/core-free-icons';
+import { Home01Icon, Delete01Icon } from '@hugeicons/core-free-icons';
 import { ThemePreference, ThemeService } from '../../core/theme/theme.service';
 import { DbService } from '../../core/persistence/db.service';
 
@@ -21,7 +21,7 @@ export class Settings {
   readonly theme = inject(ThemeService);
   private readonly db = inject(DbService);
 
-  readonly ArrowLeft01Icon = ArrowLeft01Icon;
+  readonly Home01Icon = Home01Icon;
   readonly Delete01Icon = Delete01Icon;
 
   readonly themeOptions: ThemeOption[] = [

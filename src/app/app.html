@@ -1,35 +1,17 @@
 <div class="app-shell">
-  <router-outlet />
-
-  <nav class="bottom-nav" aria-label="Navegação principal">
-    <a
-      routerLink="/"
-      routerLinkActive="is-active"
-      [routerLinkActiveOptions]="{ exact: true }"
-      class="bottom-nav__item"
-    >
-      <hugeicons-icon [icon]="Home01Icon" [size]="22" [strokeWidth]="1.8" color="currentColor" />
-      <span>Início</span>
-    </a>
-
-    <button type="button" class="bottom-nav__item" disabled aria-disabled="true" title="Decks (em breve)">
-      <hugeicons-icon [icon]="GridViewIcon" [size]="22" [strokeWidth]="1.8" color="currentColor" />
-      <span>Decks</span>
-    </button>
-
-    <button type="button" class="bottom-nav__item" disabled aria-disabled="true" title="Estudo (em breve)">
-      <hugeicons-icon [icon]="Book01Icon" [size]="22" [strokeWidth]="1.8" color="currentColor" />
-      <span>Estudo</span>
-    </button>
-
-    <button type="button" class="bottom-nav__item" disabled aria-disabled="true" title="Jogar (em breve)">
-      <hugeicons-icon [icon]="PlayIcon" [size]="22" [strokeWidth]="1.8" color="currentColor" />
-      <span>Jogar</span>
-    </button>
-
-    <button type="button" class="bottom-nav__item" disabled aria-disabled="true" title="Stats (em breve)">
-      <hugeicons-icon [icon]="ChartColumnIncreasingIcon" [size]="22" [strokeWidth]="1.8" color="currentColor" />
-      <span>Stats</span>
-    </button>
-  </nav>
+  @if (appInit.stage().kind === 'ready') {
+    <router-outlet />
+  } @else {
+    <div class="splash" data-testid="app-splash">
+      <span class="splash__badge">
+        <hugeicons-icon [icon]="Shield01Icon" [size]="36" [strokeWidth]="1.6" color="currentColor" />
+      </span>
+      <p class="splash__title">Preparando o app...</p>
+      @if (appInit.stage().kind === 'importing') {
+        <p class="splash__status">Importando ligas... {{ $any(appInit.stage()).done }}/{{ $any(appInit.stage()).total }}</p>
+      } @else if (appInit.stage().kind === 'warming-badges') {
+        <p class="splash__status">Carregando escudos... {{ $any(appInit.stage()).done }}/{{ $any(appInit.stage()).total }}</p>
+      }
+    </div>
+  }
 </div>

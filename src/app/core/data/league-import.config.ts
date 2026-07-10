@@ -18,9 +18,13 @@ export const LEAGUES_TO_IMPORT: LeagueImportConfig[] = [
   { externalId: '4344', name: 'Primeira Liga', country: 'Portugal', regionId: 'europe' },
   { externalId: '4329', name: 'Championship', country: 'Inglaterra', regionId: 'europe' },
   { externalId: '4351', name: 'Brasileirão Série A', country: 'Brasil', regionId: 'south-america' },
-  { externalId: '4358', name: 'Brasileirão Série B', country: 'Brasil', regionId: 'south-america' },
-  { externalId: '4360', name: 'Brasileirão Série C', country: 'Brasil', regionId: 'south-america' },
-  { externalId: '4362', name: 'Brasileirão Série D', country: 'Brasil', regionId: 'south-america' },
+  // Série B/C/D usavam IDs errados (4358 é a liga norueguesa Eliteserine, 4360
+  // e 4362 não existem no TheSportsDB), o que fazia o import trazer poucos ou
+  // nenhum time correto. IDs corretos confirmados via lookupleague.php e
+  // searchteams.php (times conhecidos de cada série retornam este idLeague).
+  { externalId: '4404', name: 'Brasileirão Série B', country: 'Brasil', regionId: 'south-america' },
+  { externalId: '4625', name: 'Brasileirão Série C', country: 'Brasil', regionId: 'south-america' },
+  { externalId: '5079', name: 'Brasileirão Série D', country: 'Brasil', regionId: 'south-america' },
   { externalId: '4356', name: 'Copa do Mundo', country: 'Internacional', regionId: 'world', comingSoon: true },
   { externalId: 'copa-america', name: 'Copa América', country: 'Internacional', regionId: 'world', comingSoon: true },
   { externalId: 'eurocopa', name: 'Eurocopa', country: 'Internacional', regionId: 'world', comingSoon: true },

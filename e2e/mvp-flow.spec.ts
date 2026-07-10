@@ -5,8 +5,19 @@ async function selectFirstLeague(page: Page) {
   await page.getByTestId('select-league').first().click();
 }
 
-test('import a league, study one card, and play one round', async ({ page }) => {
+// Each test starts a fresh browser context (empty IndexedDB), so AppInitService
+// blocks the whole app behind its splash while it imports every league and
+// warms the badges. Nothing is clickable until that finishes. Import speed
+// against TheSportsDB's free tier is variable, so this is a best-effort
+// budget, not a guarantee — see the note in playwright.config.ts.
+async function gotoHomeReady(page: Page) {
   await page.goto('/');
+  await expect(page.getByTestId('app-splash')).toBeHidden({ timeout: 240_000 });
+}
+
+test('import a league, study one card, and play one round', async ({ page }) => {
+  await gotoHomeReady(page);
+  await page.getByTestId('home-estudo').click();
 
   await selectFirstLeague(page);
   await expect(page.getByTestId('study-link')).toBeVisible({ timeout: 30_000 });
@@ -19,6 +30,7 @@ test('import a league, study one card, and play one round', async ({ page }) => 
   await page.getByRole('button', { name: 'Bom' }).click();
 
   await page.goto('/');
+  await page.getByTestId('home-jogos').click();
   await selectFirstLeague(page);
   await page.getByTestId('game-link').click();
   const firstOption = page.getByTestId('option').first();
@@ -28,12 +40,13 @@ test('import a league, study one card, and play one round', async ({ page }) => 
   await expect(page.getByText('2 / 10')).toBeVisible({ timeout: 5_000 });
 
   await page.goto('/');
-  await page.getByTestId('stats-link').click();
+  await page.getByTestId('home-stats').click();
   await expect(page.getByText('Estatísticas')).toBeVisible();
 });
 
 test('play reverse mode', async ({ page }) => {
-  await page.goto('/');
+  await gotoHomeReady(page);
+  await page.getByTestId('home-jogos').click();
 
   await selectFirstLeague(page);
   await expect(page.getByTestId('reverse-link')).toBeVisible({ timeout: 30_000 });
@@ -47,4 +60,18 @@ test('play reverse mode', async ({ page }) => {
   await expect(page.getByText('1 / 10')).toBeVisible();
   await firstOption.click();
   await expect(page.getByText('2 / 10')).toBeVisible({ timeout: 5_000 });
+});
+
+test('browse Pesquisa down to a team detail screen', async ({ page }) => {
+  await gotoHomeReady(page);
+  await page.getByTestId('home-pesquisa').click();
+
+  await page.getByTestId('select-country').first().click();
+  await page.getByTestId('select-league').first().click();
+  // Team badges only appear once the boot-time import has produced a deck
+  // for the league (see AppInitService), so give the grid room to populate.
+  await expect(page.getByTestId('select-team').first()).toBeVisible({ timeout: 30_000 });
+
+  await page.getByTestId('select-team').first().click();
+  await expect(page.getByTestId('team-detail')).toBeVisible();
 });

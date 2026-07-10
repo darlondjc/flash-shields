@@ -9,12 +9,11 @@ export interface ImportedTeam {
 }
 
 export interface LeagueDetails {
-  name?: string;
   badgeUrl?: string;
 }
 
 export interface DataSourceAdapter {
   readonly sourceId: string;
-  fetchTeamsForLeague(leagueName: string): Promise<ImportedTeam[]>;
+  fetchTeamsForLeague(externalLeagueId: string, season: string): Promise<ImportedTeam[]>;
   fetchLeagueDetails(externalLeagueId: string): Promise<LeagueDetails>;
 }
