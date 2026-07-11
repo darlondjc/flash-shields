@@ -1,0 +1,15 @@
+{
+  /* tsconfig próprio das functions: o tsconfig.json da raiz usa
+     "module": "preserve" (exigência do build Angular), o que faz o builder
+     da Vercel emitir ESM — que o runtime Node carrega como CommonJS (não há
+     "type": "module" no package.json) e quebra com "Cannot use import
+     statement outside a module". Aqui forçamos emissão CommonJS. */
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true
+  }
+}
