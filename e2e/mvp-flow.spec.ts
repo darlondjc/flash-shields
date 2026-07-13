@@ -5,11 +5,9 @@ async function selectFirstLeague(page: Page) {
   await page.getByTestId('select-league').first().click();
 }
 
-// Each test starts a fresh browser context (empty IndexedDB), so AppInitService
-// blocks the whole app behind its splash while it imports every league and
-// warms the badges. Nothing is clickable until that finishes. Import speed
-// against TheSportsDB's free tier is variable, so this is a best-effort
-// budget, not a guarantee — see the note in playwright.config.ts.
+// The boot splash is a fixed-length brand intro (~2.2s) — imports run in the
+// background behind it (see App). Waiting for it to unmount just guarantees
+// the shell is interactive before the test starts clicking.
 async function gotoHomeReady(page: Page) {
   await page.goto('/');
   await expect(page.getByTestId('app-splash')).toBeHidden({ timeout: 240_000 });

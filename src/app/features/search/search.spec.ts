@@ -77,7 +77,9 @@ describe('Search', () => {
   it('typing a team name filters down to leagues containing a match', async () => {
     await settle();
 
-    const input: HTMLInputElement = fixture.nativeElement.querySelector('[data-testid="search-input"]');
+    const input: HTMLInputElement = fixture.nativeElement.querySelector(
+      '[data-testid="search-input"]',
+    );
     await interactAndSettle(() => {
       input.value = 'Arsenal';
       input.dispatchEvent(new Event('input'));
@@ -89,11 +91,58 @@ describe('Search', () => {
     expect(leagueButton.textContent).toContain('Premier League');
   });
 
+  it('clicking a league in the search results opens its team grid', async () => {
+    await settle();
+
+    const input: HTMLInputElement = fixture.nativeElement.querySelector(
+      '[data-testid="search-input"]',
+    );
+    await interactAndSettle(() => {
+      input.value = 'Arsenal';
+      input.dispatchEvent(new Event('input'));
+    });
+
+    await interactAndSettle(() =>
+      fixture.nativeElement.querySelector('[data-testid="select-league"]').click(),
+    );
+
+    const teamButton = fixture.nativeElement.querySelector('[data-testid="select-team"]');
+    expect(teamButton).toBeTruthy();
+    expect(teamButton.textContent).toContain('Arsenal');
+    // The results list must give way to the team grid, and the box must be
+    // empty so the next search starts fresh.
+    expect(fixture.nativeElement.querySelector('[data-testid="search-input"]').value).toBe('');
+  });
+
+  it('clearing the search box goes back to the country list', async () => {
+    await settle();
+
+    const input: HTMLInputElement = fixture.nativeElement.querySelector(
+      '[data-testid="search-input"]',
+    );
+    await interactAndSettle(() => {
+      input.value = 'Arsenal';
+      input.dispatchEvent(new Event('input'));
+    });
+    // The native ✕ of type=search clears the value and fires input.
+    await interactAndSettle(() => {
+      input.value = '';
+      input.dispatchEvent(new Event('input'));
+    });
+
+    expect(fixture.nativeElement.querySelector('[data-testid="select-country"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="select-league"]')).toBeFalsy();
+  });
+
   it('drills down from country to league to a 3-column team grid', async () => {
     await settle();
 
-    await interactAndSettle(() => fixture.nativeElement.querySelector('[data-testid="select-country"]').click());
-    await interactAndSettle(() => fixture.nativeElement.querySelector('[data-testid="select-league"]').click());
+    await interactAndSettle(() =>
+      fixture.nativeElement.querySelector('[data-testid="select-country"]').click(),
+    );
+    await interactAndSettle(() =>
+      fixture.nativeElement.querySelector('[data-testid="select-league"]').click(),
+    );
 
     expect(teamServiceSpy.getTeam).toHaveBeenCalledWith('ts-4328-1');
     const teamButton = fixture.nativeElement.querySelector('[data-testid="select-team"]');
@@ -108,9 +157,15 @@ describe('Search', () => {
     vi.useFakeTimers({ now: new Date(2026, 5, 15), toFake: ['Date'] });
     await settle();
 
-    await interactAndSettle(() => fixture.nativeElement.querySelector('[data-testid="select-country"]').click());
-    await interactAndSettle(() => fixture.nativeElement.querySelector('[data-testid="select-league"]').click());
-    await interactAndSettle(() => fixture.nativeElement.querySelector('[data-testid="select-team"]').click());
+    await interactAndSettle(() =>
+      fixture.nativeElement.querySelector('[data-testid="select-country"]').click(),
+    );
+    await interactAndSettle(() =>
+      fixture.nativeElement.querySelector('[data-testid="select-league"]').click(),
+    );
+    await interactAndSettle(() =>
+      fixture.nativeElement.querySelector('[data-testid="select-team"]').click(),
+    );
 
     const detail = fixture.nativeElement.querySelector('[data-testid="team-detail"]');
     expect(detail.textContent).toContain('Arsenal');

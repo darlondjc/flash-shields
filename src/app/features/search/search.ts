@@ -9,7 +9,12 @@ import { DeckService } from '../../core/decks/deck.service';
 import { ImportService } from '../../core/data/import.service';
 import { LeagueService } from '../../core/leagues/league.service';
 import { TeamService } from '../../core/leagues/team.service';
-import { countryOptions, leaguesForCountry, countryFlag, CountryOption } from '../../core/leagues/league-catalog';
+import {
+  countryOptions,
+  leaguesForCountry,
+  countryFlag,
+  CountryOption,
+} from '../../core/leagues/league-catalog';
 import { LEAGUES_TO_IMPORT, LeagueImportConfig } from '../../core/data/league-import.config';
 import { Deck } from '../../core/models/deck.model';
 import { League } from '../../core/models/league.model';
@@ -19,7 +24,7 @@ import { TeamBadge } from '../../shared/ui/team-badge';
 
 // comingSoon leagues have no real teams to browse (some don't even have a
 // numeric TheSportsDB id), so Pesquisa excludes them entirely.
-const SEARCHABLE_LEAGUES = LEAGUES_TO_IMPORT.filter(config => !config.comingSoon);
+const SEARCHABLE_LEAGUES = LEAGUES_TO_IMPORT.filter((config) => !config.comingSoon);
 
 @Component({
   selector: 'app-search',
@@ -39,7 +44,7 @@ export class Search {
   readonly Search01Icon = Search01Icon;
   readonly ArrowLeft02Icon = ArrowLeft02Icon;
   readonly Exchange01Icon = Exchange01Icon;
-  
+
   readonly query = signal('');
   readonly matchedLeagues = signal<LeagueImportConfig[] | null>(null);
   readonly selectedCountry = signal<string | null>(null);
@@ -72,7 +77,7 @@ export class Search {
   private async refreshCatalog() {
     this.decks.set(await this.deckService.listDecks());
     const entries = await Promise.all(
-      SEARCHABLE_LEAGUES.map(async config => {
+      SEARCHABLE_LEAGUES.map(async (config) => {
         const leagueId = `ts-${config.externalId}`;
         return [leagueId, await this.leagueService.getLeague(leagueId)] as const;
       }),
@@ -85,14 +90,14 @@ export class Search {
     const teamId = this.route.snapshot.queryParamMap.get('team');
     if (!leagueExternalId) return;
 
-    const config = SEARCHABLE_LEAGUES.find(c => c.externalId === leagueExternalId);
+    const config = SEARCHABLE_LEAGUES.find((c) => c.externalId === leagueExternalId);
     if (!config) return;
 
     this.selectedCountry.set(config.country);
     await this.openLeague(config);
 
     if (teamId) {
-      const team = this.leagueTeams().find(t => t.id === teamId);
+      const team = this.leagueTeams().find((t) => t.id === teamId);
       if (team) this.selectedTeam.set(team);
     }
   }
@@ -122,11 +127,13 @@ export class Search {
     }
 
     const matches = await this.teamService.searchByName(trimmed);
-    const matchedTeamIds = new Set(matches.map(team => team.id));
+    const matchedTeamIds = new Set(matches.map((team) => team.id));
     const decks = this.decks();
-    const matchedLeagues = SEARCHABLE_LEAGUES.filter(config => {
-      const deck = decks.find(d => d.scope.kind === 'league' && d.scope.leagueId === `ts-${config.externalId}`);
-      return !!deck && deck.teamIds.some(id => matchedTeamIds.has(id));
+    const matchedLeagues = SEARCHABLE_LEAGUES.filter((config) => {
+      const deck = decks.find(
+        (d) => d.scope.kind === 'league' && d.scope.leagueId === `ts-${config.externalId}`,
+      );
+      return !!deck && deck.teamIds.some((id) => matchedTeamIds.has(id));
     });
     this.matchedLeagues.set(matchedLeagues);
   }
@@ -153,11 +160,23 @@ export class Search {
     this.selectedTeam.set(null);
   }
 
+  // Handler for clicking a league card (search results or country list).
+  // Clears the query so the results branch stops shadowing the team grid,
+  // and pins the country so "Trocar liga" lands on the right list.
+  async selectLeague(config: LeagueImportConfig) {
+    this.query.set('');
+    this.matchedLeagues.set(null);
+    this.selectedCountry.set(config.country);
+    await this.openLeague(config);
+  }
+
   async openLeague(config: LeagueImportConfig) {
     this.selectedLeagueConfig.set(config);
-    const deck = this.decks().find(d => d.scope.kind === 'league' && d.scope.leagueId === `ts-${config.externalId}`);
+    const deck = this.decks().find(
+      (d) => d.scope.kind === 'league' && d.scope.leagueId === `ts-${config.externalId}`,
+    );
     const teamIds = deck?.teamIds ?? [];
-    const teams = await Promise.all(teamIds.map(id => this.teamService.getTeam(id)));
+    const teams = await Promise.all(teamIds.map((id) => this.teamService.getTeam(id)));
     this.leagueTeams.set(teams.filter((team): team is Team => !!team));
   }
 
@@ -177,7 +196,7 @@ export class Search {
 
   leagueNamesFor(team: Team): string[] {
     return team.leagueIds
-      .map(id => SEARCHABLE_LEAGUES.find(c => `ts-${c.externalId}` === id)?.name)
+      .map((id) => SEARCHABLE_LEAGUES.find((c) => `ts-${c.externalId}` === id)?.name)
       .filter((name): name is string => !!name);
   }
 }

@@ -31,7 +31,7 @@
       } @else {
         <div class="league-list league-list--single-column">
           @for (config of matchedLeagues(); track config.externalId) {
-            <button type="button" class="card league-card league-card--selectable" data-testid="select-league" (click)="openLeague(config)">
+            <button type="button" class="card league-card league-card--selectable" data-testid="select-league" (click)="selectLeague(config)">
               <div class="league-card__header">
                 @if (leagueFor(config.externalId); as league) {
                   <span class="league-card__badge"><app-league-badge [league]="league" /></span>
@@ -129,7 +129,7 @@
 
       <div class="league-list league-list--single-column">
         @for (config of leaguesForCountry(country); track config.externalId) {
-          <button type="button" class="card league-card league-card--selectable" data-testid="select-league" (click)="openLeague(config)">
+          <button type="button" class="card league-card league-card--selectable" data-testid="select-league" (click)="selectLeague(config)">
             <div class="league-card__header">
               @if (leagueFor(config.externalId); as league) {
                 <span class="league-card__badge"><app-league-badge [league]="league" /></span>

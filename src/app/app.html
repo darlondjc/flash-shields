@@ -1,3 +1,7 @@
+@if (splashState() !== 'gone') {
+  <app-splash [leaving]="splashState() === 'leaving'" />
+}
+
 <div class="app-shell">
   @if (importService.isImporting()) {
     <div class="import-banner" data-testid="import-banner" role="status">
