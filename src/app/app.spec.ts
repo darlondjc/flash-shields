@@ -48,7 +48,7 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="app-splash"]')).toBeTruthy();
 
     // Minimum display elapses → splash starts fading but is still in the DOM.
-    vi.advanceTimersByTime(1800);
+    vi.advanceTimersByTime(3000);
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[data-testid="app-splash"]')).toBeTruthy();
 

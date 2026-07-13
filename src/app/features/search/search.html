@@ -15,42 +15,39 @@
       <input
         type="search"
         class="search-bar__input"
-        placeholder="Buscar time..."
+        [placeholder]="selectedLeagueConfig() ? 'Filtrar times...' : 'Buscar time...'"
         data-testid="search-input"
         [value]="query()"
         (input)="onQueryChange($any($event.target).value)"
       />
+      @if (query()) {
+        <button
+          type="button"
+          class="search-bar__clear"
+          aria-label="Limpar busca"
+          data-testid="clear-search"
+          (click)="clearQuery()"
+        >
+          <hugeicons-icon
+            [icon]="Cancel01Icon"
+            [size]="16"
+            [strokeWidth]="2"
+            color="currentColor"
+          />
+        </button>
+      }
     </div>
   }
 
-  @if (query().trim()) {
-    <section aria-label="Resultado da busca">
-      <p class="eyebrow">Ligas com "{{ query() }}"</p>
-      @if (matchedLeagues() && matchedLeagues()!.length === 0) {
-        <p class="league-card__status">Nenhum time encontrado.</p>
-      } @else {
-        <div class="league-list league-list--single-column">
-          @for (config of matchedLeagues(); track config.externalId) {
-            <button type="button" class="card league-card league-card--selectable" data-testid="select-league" (click)="selectLeague(config)">
-              <div class="league-card__header">
-                @if (leagueFor(config.externalId); as league) {
-                  <span class="league-card__badge"><app-league-badge [league]="league" /></span>
-                }
-                <div class="league-card__info">
-                  <p class="league-card__name">{{ config.name }}</p>
-                  <p class="league-card__meta">{{ config.country }}</p>
-                </div>
-                <span class="league-card__flag" [attr.aria-label]="config.country">{{ countryFlag(config.country) }}</span>
-              </div>
-            </button>
-          }
-        </div>
-      }
-    </section>
-  } @else if (selectedTeam(); as team) {
+  @if (selectedTeam(); as team) {
     <section aria-label="Detalhe do time">
       <button type="button" class="section-header__back" (click)="backToTeams()">
-        <hugeicons-icon [icon]="ArrowLeft02Icon" [size]="16" [strokeWidth]="1.8" color="currentColor" />
+        <hugeicons-icon
+          [icon]="ArrowLeft02Icon"
+          [size]="16"
+          [strokeWidth]="1.8"
+          color="currentColor"
+        />
         Voltar à tela de pesquisa
       </button>
 
@@ -86,7 +83,11 @@
           @if (team.website) {
             <div>
               <dt>Site oficial</dt>
-              <dd><a [href]="teamWebsiteHref(team)" target="_blank" rel="noopener noreferrer">{{ team.website }}</a></dd>
+              <dd>
+                <a [href]="teamWebsiteHref(team)" target="_blank" rel="noopener noreferrer">{{
+                  team.website
+                }}</a>
+              </dd>
             </div>
           }
           @if (team.alternateNames.length) {
@@ -103,33 +104,88 @@
       <div class="section-header">
         <p class="eyebrow">{{ config.name }}</p>
         <button type="button" class="section-header__back" (click)="backToLeagues()">
-          <hugeicons-icon [icon]="Exchange01Icon" [size]="16" [strokeWidth]="1.8" color="currentColor" />
+          <hugeicons-icon
+            [icon]="Exchange01Icon"
+            [size]="16"
+            [strokeWidth]="1.8"
+            color="currentColor"
+          />
           Trocar liga
         </button>
       </div>
 
-      <div class="team-grid">
-        @for (team of leagueTeams(); track team.id) {
-          <button type="button" class="team-grid__item" data-testid="select-team" (click)="selectTeam(team)">
-            <span class="team-grid__badge"><app-team-badge [team]="team" /></span>
-            <span class="team-grid__name">{{ team.name }}</span>
-          </button>
-        }
-      </div>
+      @if (query().trim() && filteredLeagueTeams().length === 0) {
+        <p class="league-card__status">Nenhum time encontrado.</p>
+      } @else {
+        <div class="team-grid">
+          @for (team of filteredLeagueTeams(); track team.id) {
+            <button
+              type="button"
+              class="team-grid__item"
+              data-testid="select-team"
+              (click)="selectTeam(team)"
+            >
+              <span class="team-grid__badge"><app-team-badge [team]="team" /></span>
+              <span class="team-grid__name">{{ team.name }}</span>
+            </button>
+          }
+        </div>
+      }
+    </section>
+  } @else if (query().trim()) {
+    <section aria-label="Resultado da busca">
+      <p class="eyebrow">Ligas com "{{ query() }}"</p>
+      @if (matchedLeagues() && matchedLeagues()!.length === 0) {
+        <p class="league-card__status">Nenhum time encontrado.</p>
+      } @else {
+        <div class="league-list league-list--single-column">
+          @for (config of matchedLeagues(); track config.externalId) {
+            <button
+              type="button"
+              class="card league-card league-card--selectable"
+              data-testid="select-league"
+              (click)="selectLeague(config)"
+            >
+              <div class="league-card__header">
+                @if (leagueFor(config.externalId); as league) {
+                  <span class="league-card__badge"><app-league-badge [league]="league" /></span>
+                }
+                <div class="league-card__info">
+                  <p class="league-card__name">{{ config.name }}</p>
+                  <p class="league-card__meta">{{ config.country }}</p>
+                </div>
+                <span class="league-card__flag" [attr.aria-label]="config.country">{{
+                  countryFlag(config.country)
+                }}</span>
+              </div>
+            </button>
+          }
+        </div>
+      }
     </section>
   } @else if (selectedCountry(); as country) {
     <section aria-label="Ligas do país">
       <div class="section-header">
         <p class="eyebrow">{{ country }}</p>
         <button type="button" class="section-header__back" (click)="backToCountries()">
-          <hugeicons-icon [icon]="Exchange01Icon" [size]="16" [strokeWidth]="1.8" color="currentColor" />
+          <hugeicons-icon
+            [icon]="Exchange01Icon"
+            [size]="16"
+            [strokeWidth]="1.8"
+            color="currentColor"
+          />
           Trocar país
         </button>
       </div>
 
       <div class="league-list league-list--single-column">
         @for (config of leaguesForCountry(country); track config.externalId) {
-          <button type="button" class="card league-card league-card--selectable" data-testid="select-league" (click)="selectLeague(config)">
+          <button
+            type="button"
+            class="card league-card league-card--selectable"
+            data-testid="select-league"
+            (click)="selectLeague(config)"
+          >
             <div class="league-card__header">
               @if (leagueFor(config.externalId); as league) {
                 <span class="league-card__badge"><app-league-badge [league]="league" /></span>
@@ -148,11 +204,20 @@
       <p class="eyebrow">Selecione um país</p>
       <div class="league-list league-list--countries">
         @for (country of countryOptions(); track country.name) {
-          <button type="button" class="card league-card league-card--selectable league-card--country" data-testid="select-country" (click)="selectCountry(country.name)">
-            <span class="league-card__flag" [attr.aria-label]="country.name">{{ country.flag }}</span>
+          <button
+            type="button"
+            class="card league-card league-card--selectable league-card--country"
+            data-testid="select-country"
+            (click)="selectCountry(country.name)"
+          >
+            <span class="league-card__flag" [attr.aria-label]="country.name">{{
+              country.flag
+            }}</span>
             <div class="league-card__info">
               <p class="league-card__name">{{ country.name }}</p>
-              <p class="league-card__meta">{{ country.count }} {{ country.count === 1 ? 'torneio' : 'torneios' }}</p>
+              <p class="league-card__meta">
+                {{ country.count }} {{ country.count === 1 ? 'torneio' : 'torneios' }}
+              </p>
             </div>
           </button>
         }

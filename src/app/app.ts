@@ -11,7 +11,7 @@ import { AppSplash } from './shared/ui/app-splash';
 // The splash is a fixed-length brand moment, not a gate: imports keep running
 // in the background (the import banner reports their progress), so it never
 // waits on them — it fades after the minimum display and unmounts.
-const SPLASH_MIN_DISPLAY_MS = 1800;
+const SPLASH_MIN_DISPLAY_MS = 3000;
 const SPLASH_FADE_MS = 450;
 
 @Component({

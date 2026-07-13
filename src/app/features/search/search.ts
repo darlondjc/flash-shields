@@ -5,6 +5,7 @@ import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
 import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 import ArrowLeft02Icon from '@hugeicons/core-free-icons/ArrowLeft02Icon';
 import Exchange01Icon from '@hugeicons/core-free-icons/Exchange01Icon';
+import Cancel01Icon from '@hugeicons/core-free-icons/Cancel01Icon';
 import { DeckService } from '../../core/decks/deck.service';
 import { ImportService } from '../../core/data/import.service';
 import { LeagueService } from '../../core/leagues/league.service';
@@ -44,6 +45,7 @@ export class Search {
   readonly Search01Icon = Search01Icon;
   readonly ArrowLeft02Icon = ArrowLeft02Icon;
   readonly Exchange01Icon = Exchange01Icon;
+  readonly Cancel01Icon = Cancel01Icon;
 
   readonly query = signal('');
   readonly matchedLeagues = signal<LeagueImportConfig[] | null>(null);
@@ -127,6 +129,9 @@ export class Search {
     }
 
     const matches = await this.teamService.searchByName(trimmed);
+    // Typing fast fires overlapping searches; drop any response that no
+    // longer corresponds to what's in the box.
+    if (this.query().trim() !== trimmed) return;
     const matchedTeamIds = new Set(matches.map((team) => team.id));
     const decks = this.decks();
     const matchedLeagues = SEARCHABLE_LEAGUES.filter((config) => {
@@ -161,13 +166,31 @@ export class Search {
   }
 
   // Handler for clicking a league card (search results or country list).
-  // Clears the query so the results branch stops shadowing the team grid,
-  // and pins the country so "Trocar liga" lands on the right list.
+  // Keeps the query — the team grid honors it as a filter — and pins the
+  // country so "Trocar liga" lands on the right list.
   async selectLeague(config: LeagueImportConfig) {
-    this.query.set('');
-    this.matchedLeagues.set(null);
     this.selectedCountry.set(config.country);
     await this.openLeague(config);
+  }
+
+  clearQuery() {
+    this.query.set('');
+    this.matchedLeagues.set(null);
+  }
+
+  // Teams of the open league, narrowed by the query while one is typed.
+  // Same fields TeamService.searchByName matches on, so the teams shown
+  // are consistent with the leagues the search surfaced.
+  filteredLeagueTeams(): Team[] {
+    const needle = this.query().trim().toLowerCase();
+    const teams = this.leagueTeams();
+    if (!needle) return teams;
+    return teams.filter(
+      (team) =>
+        team.name.toLowerCase().includes(needle) ||
+        team.shortName?.toLowerCase().includes(needle) ||
+        team.alternateNames.some((name) => name.toLowerCase().includes(needle)),
+    );
   }
 
   async openLeague(config: LeagueImportConfig) {
