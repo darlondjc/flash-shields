@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Loading03Icon } from '@hugeicons/core-free-icons';
+import Loading03Icon from '@hugeicons/core-free-icons/Loading03Icon';
 import { ThemeService } from './core/theme/theme.service';
 import { AppInitService } from './core/data/app-init.service';
 import { ImportService } from './core/data/import.service';

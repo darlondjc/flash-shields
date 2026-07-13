@@ -1,14 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import {
-  Home01Icon,
-  Settings01Icon,
-  Book01Icon,
-  Quiz01Icon,
-  ChartColumnIncreasingIcon,
-  Search01Icon,
-} from '@hugeicons/core-free-icons';
+import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
+import Settings01Icon from '@hugeicons/core-free-icons/Settings01Icon';
+import Book01Icon from '@hugeicons/core-free-icons/Book01Icon';
+import Quiz01Icon from '@hugeicons/core-free-icons/Quiz01Icon';
+import ChartColumnIncreasingIcon from '@hugeicons/core-free-icons/ChartColumnIncreasingIcon';
+import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 
 interface HomeCard {
   routerLink: string;

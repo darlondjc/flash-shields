@@ -12,6 +12,30 @@ export interface SyncResult {
   errors: string[];
 }
 
+// Times de uma liga eram processados um a um (download do escudo + upload
+// pro Blob + write no Firestore), e isso sozinho já estourava o timeout da
+// function pra o catálogo inteiro de ligas. Só a chamada JSON à TheSportsDB
+// precisa do throttle sequencial (thesportsdb-client.ts); download de escudo
+// e Firestore não têm esse limite, então rodam em paralelo com um teto de
+// concorrência pra não abrir centenas de conexões de uma vez.
+const TEAM_CONCURRENCY = 8;
+
+async function mapWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (true) {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      results[index] = await fn(items[index]);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
 // Raspa todas as ligas curadas (exceto comingSoon, que não têm elenco pra
 // importar — mesmo filtro usado hoje em app-init.service.ts/search.ts no
 // client) e grava o resultado no Firestore + Vercel Blob. Roda uma única vez
@@ -26,6 +50,19 @@ export async function runSync(): Promise<SyncResult> {
 
   for (const config of configs) {
     try {
+      // Sincronizar o catálogo inteiro numa invocação só facilmente estoura o
+      // timeout da function; sem isso, uma reentrada (retry manual, ou o
+      // cron rodando de novo antes de completar) refazia as ligas já
+      // sincronizadas do zero e nunca sobrava tempo pra avançar nas
+      // seguintes. Pular ligas atualizadas há menos de um dia deixa a
+      // reentrada avançar pro que falta, sem abrir mão do refresh semanal.
+      const existing = await db.collection('leagues').doc(config.externalId).get();
+      const updatedAt = existing.data()?.['updatedAt'] as FirebaseFirestore.Timestamp | undefined;
+      if (updatedAt && Date.now() - updatedAt.toMillis() < 24 * 60 * 60 * 1000) {
+        result.leaguesSynced++;
+        continue;
+      }
+
       const details = await fetchLeagueDetails(get, config.externalId);
       const badgeUrl = await uploadBadge(`badges/leagues/${config.externalId}.png`, details.badgeUrl);
 
@@ -41,7 +78,7 @@ export async function runSync(): Promise<SyncResult> {
 
       const teams = await fetchTeamsForLeague(get, config.externalId, currentSeason(config.regionId));
 
-      for (const team of teams) {
+      await mapWithConcurrency(teams, TEAM_CONCURRENCY, async team => {
         const teamBadgeUrl = await uploadBadge(`badges/teams/${team.externalId}.png`, team.badgeUrl);
 
         await db.collection('teams').doc(team.externalId).set(
@@ -61,7 +98,7 @@ export async function runSync(): Promise<SyncResult> {
           { merge: true },
         );
         result.teamsUpserted++;
-      }
+      });
 
       result.leaguesSynced++;
     } catch (err) {

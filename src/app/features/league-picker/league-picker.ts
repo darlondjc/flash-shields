@@ -1,7 +1,11 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Home01Icon, Book01Icon, Quiz01Icon, Exchange01Icon, CheckmarkCircle02Icon } from '@hugeicons/core-free-icons';
+import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
+import Book01Icon from '@hugeicons/core-free-icons/Book01Icon';
+import Quiz01Icon from '@hugeicons/core-free-icons/Quiz01Icon';
+import Exchange01Icon from '@hugeicons/core-free-icons/Exchange01Icon';
+import CheckmarkCircle02Icon from '@hugeicons/core-free-icons/CheckmarkCircle02Icon';
 import { ImportService } from '../../core/data/import.service';
 import { DeckService } from '../../core/decks/deck.service';
 import { LeagueService } from '../../core/leagues/league.service';

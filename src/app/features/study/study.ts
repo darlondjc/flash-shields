@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Home01Icon } from '@hugeicons/core-free-icons';
+import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
 import { StudyStore } from './study.store';
 import { TeamBadge } from '../../shared/ui/team-badge';
 

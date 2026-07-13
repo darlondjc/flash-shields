@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, inject, input, effect, DestroyRef }
 import { Router, ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Home01Icon, FireIcon } from '@hugeicons/core-free-icons';
+import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
+import FireIcon from '@hugeicons/core-free-icons/FireIcon';
 import { map } from 'rxjs/operators';
 import { GameMode } from '../../core/models/session.model';
 import { GameStore } from './game.store';

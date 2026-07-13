@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Home01Icon, Delete01Icon, RefreshIcon } from '@hugeicons/core-free-icons';
+import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
+import Delete01Icon from '@hugeicons/core-free-icons/Delete01Icon';
+import RefreshIcon from '@hugeicons/core-free-icons/RefreshIcon';
 import { ThemePreference, ThemeService } from '../../core/theme/theme.service';
 import { DbService } from '../../core/persistence/db.service';
 import { ImportService } from '../../core/data/import.service';

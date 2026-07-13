@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, PendingTasks } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { Home01Icon } from '@hugeicons/core-free-icons';
+import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
 import { StatsStore } from './stats.store';
 import { GameMode } from '../../core/models/session.model';
 import { LeagueBadge } from '../../shared/ui/league-badge';

@@ -1,6 +1,13 @@
 import type { VercelRequest, VercelResponse } from '../_lib/http-types';
 import { runSync } from '../_lib/sync';
 
+// Sincronizar todas as ligas curadas (raspagem + upload de escudos) sequencial
+// facilmente estoura o timeout padrão de function da Vercel; maxDuration
+// exige plano Pro ou superior para valores acima de 60s.
+export const config = {
+  maxDuration: 300,
+};
+
 // A Vercel injeta automaticamente "Authorization: Bearer <CRON_SECRET>" em
 // chamadas originadas pelo Vercel Cron quando a env var CRON_SECRET está
 // configurada no projeto. Validar aqui impede que alguém dispare o sync (e
