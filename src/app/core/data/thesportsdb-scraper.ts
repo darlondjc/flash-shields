@@ -132,6 +132,17 @@ function teamPlaysInLeague(team: TheSportsDbTeam, externalLeagueId: string): boo
     .includes(externalLeagueId);
 }
 
+// Válvula de escape pros buracos do índice do searchteams.php: alguns times
+// não são encontráveis por nenhuma grafia do próprio nome (ex.: 'St. Louis
+// City SC' retorna o Louisville City, 'San Lorenzo' só acha o time de
+// basquete do clube). Entradas 'id:<idTeam>' em teamNames resolvem direto
+// por lookupteam.php.
+export async function fetchTeamById(get: ThesportsdbGet, idTeam: string): Promise<ImportedTeam | null> {
+  const response = await get<TheSportsDbTeamsResponse>('lookupteam.php', { id: idTeam });
+  const team = response.teams?.[0];
+  return team ? mapTeam(team) : null;
+}
+
 // knownTeamNames pula a descoberta por rodadas: torneios de seleções têm
 // elenco fixo por edição (ver teamNames em league-import.config.ts), e a
 // varredura de eventsround — pensada pra ligas de clubes com dezenas de
@@ -148,7 +159,9 @@ export async function fetchTeamsForLeague(
   // paralelo ignoraria o espaçamento entre chamadas e estouraria o limite
   // de qualquer forma.
   for (const name of teamNames) {
-    const team = await fetchTeamByName(get, name, externalLeagueId);
+    const team = name.startsWith('id:')
+      ? await fetchTeamById(get, name.slice(3))
+      : await fetchTeamByName(get, name, externalLeagueId);
     if (team) teams.push(team);
   }
   return teams;

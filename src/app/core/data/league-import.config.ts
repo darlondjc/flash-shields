@@ -45,8 +45,11 @@ export const LEAGUES_TO_IMPORT: LeagueImportConfig[] = [
     // eventsday.php — o recorte com todos os grandes que a API expõe inteiro
     // na chave gratuita (a edição completa tem 91 clubes, a maioria de fases
     // preliminares).
+    // 'Athletic Club' (sem o -MG): a busca pelo nome oficial com sufixo não
+    // retorna nada; a busca curta acha o clube certo (o matcher confere que
+    // ele disputa a 4725, então não colide com o Athletic Bilbao).
     teamNames: [
-      'Athletic Club-MG', 'Atlético Mineiro', 'Barra', 'Botafogo', 'Ceará',
+      'Athletic Club', 'Atlético Mineiro', 'Barra', 'Botafogo', 'Ceará',
       'Chapecoense', 'Corinthians', 'Cruzeiro', 'Flamengo', 'Fluminense',
       'Fortaleza', 'Goiás', 'Grêmio', 'Internacional', 'Mirassol',
       'Operário Ferroviário', 'Palmeiras', 'Paysandu', 'Remo', 'Santos',
@@ -67,7 +70,8 @@ export const LEAGUES_TO_IMPORT: LeagueImportConfig[] = [
       'Nashville SC', 'New England Revolution', 'New York City FC', 'New York Red Bulls',
       'Orlando City', 'Philadelphia Union', 'Portland Timbers', 'Real Salt Lake',
       'San Diego FC', 'San Jose Earthquakes', 'Seattle Sounders', 'Sporting Kansas City',
-      'St. Louis City SC', 'Toronto FC', 'Vancouver Whitecaps',
+      'id:147062', // St. Louis City SC — a busca por qualquer grafia do nome retorna o Louisville City
+      'Toronto FC', 'Vancouver Whitecaps',
     ],
   },
   // Copas continentais de clubes: o elenco muda por edição, então segue fixo
@@ -99,9 +103,11 @@ export const LEAGUES_TO_IMPORT: LeagueImportConfig[] = [
       'Audax Italiano', 'Barracas Central', 'Blooming', 'Boston River', 'Botafogo',
       'Bragantino', 'Carabobo', 'Caracas', 'Cienciano', 'Club Olimpia', 'Deportivo Cuenca',
       'Deportivo Riestra', 'Grêmio', 'Independiente Petrolero', 'Juventud Las Piedras',
-      'Macará', 'Millonarios', 'Montevideo City Torque', "O'Higgins", 'Palestino',
-      'Racing Club', 'Recoleta', 'River Plate', 'San Lorenzo', 'Santos', 'São Paulo',
-      'Tigre', 'Vasco da Gama',
+      'Macará', 'Millonarios', 'Montevideo City Torque',
+      'O Higgins', // com apóstrofo ("O'Higgins") a busca não retorna nada
+      'Palestino', 'Racing Club', 'Recoleta', 'River Plate',
+      'id:135173', // San Lorenzo — a busca pelo nome só acha o time de basquete do clube
+      'Santos', 'São Paulo', 'Tigre', 'Vasco da Gama',
     ],
   },
   // IDs reais confirmados via lookupleague.php (4356 era a A-League australiana,

@@ -23,6 +23,7 @@ export class AppInitService {
   // instead of waiting behind a splash screen.
   async run(): Promise<void> {
     const missing = await this.findMissingLeagues();
+    this.importService.markDataChecked();
     if (missing.length === 0) return;
 
     await this.importService.importLeagues(missing);
