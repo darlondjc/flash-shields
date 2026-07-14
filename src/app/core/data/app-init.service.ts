@@ -13,8 +13,8 @@ export class AppInitService {
   private leagueService = inject(LeagueService);
   private db = inject(DbService);
 
-  // comingSoon leagues (Copa do Mundo etc.) are placeholders with no importable
-  // data, so they never take part in the boot-time import.
+  // comingSoon leagues are placeholders with no importable data, so they
+  // never take part in the boot-time import.
   private readonly leaguesToImport = LEAGUES_TO_IMPORT.filter(config => !config.comingSoon);
 
   // Runs without blocking the UI: ImportService.isImporting/progress drive a

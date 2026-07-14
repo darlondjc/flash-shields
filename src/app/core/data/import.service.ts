@@ -58,7 +58,10 @@ export class ImportService {
     };
     await this.db.leagues.put(league);
 
-    const importedTeams = await this.adapter.fetchTeamsForLeague(config.externalId, currentSeason(config.regionId));
+    const importedTeams = await this.adapter.fetchTeamsForLeague(
+      config.externalId,
+      config.season ?? currentSeason(config.regionId),
+    );
 
     for (const imported of importedTeams) {
       const team = mapImportedTeamToTeam(imported, league.id);

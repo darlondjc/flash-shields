@@ -17,6 +17,7 @@ export interface TheSportsDbTeam {
   strBadge: string | null;
   intFormedYear: string | null;
   idLeague: string | null;
+  strSport?: string | null;
   strStadium: string | null;
   strWebsite: string | null;
 }
@@ -103,7 +104,11 @@ export async function discoverTeamNames(get: ThesportsdbGet, externalLeagueId: s
 
 export async function fetchTeamByName(get: ThesportsdbGet, name: string, externalLeagueId: string): Promise<ImportedTeam | null> {
   const response = await get<TheSportsDbTeamsResponse>('searchteams.php', { t: name });
-  const candidates = response.teams ?? [];
+  // A busca é por nome em toda a base, então colide com outros esportes:
+  // 'Jordan' retorna a equipe extinta de F1, 'Georgia' um time universitário
+  // de futebol americano. Sem strSport na resposta (não deveria acontecer),
+  // dá o benefício da dúvida em vez de descartar.
+  const candidates = (response.teams ?? []).filter(team => team.strSport == null || team.strSport === 'Soccer');
   // Nomes de time podem colidir entre países (ex.: "América" existe no
   // Brasil e no México), então prioriza o resultado cujo idLeague bate com
   // a liga que estamos importando; sem isso, usa o primeiro resultado.
@@ -111,8 +116,17 @@ export async function fetchTeamByName(get: ThesportsdbGet, name: string, externa
   return match ? mapTeam(match) : null;
 }
 
-export async function fetchTeamsForLeague(get: ThesportsdbGet, externalLeagueId: string, season: string): Promise<ImportedTeam[]> {
-  const teamNames = await discoverTeamNames(get, externalLeagueId, season);
+// knownTeamNames pula a descoberta por rodadas: torneios de seleções têm
+// elenco fixo por edição (ver teamNames em league-import.config.ts), e a
+// varredura de eventsround — pensada pra ligas de clubes com dezenas de
+// rodadas — não cobre o elenco inteiro de um torneio curto na chave gratuita.
+export async function fetchTeamsForLeague(
+  get: ThesportsdbGet,
+  externalLeagueId: string,
+  season: string,
+  knownTeamNames?: string[],
+): Promise<ImportedTeam[]> {
+  const teamNames = knownTeamNames ?? (await discoverTeamNames(get, externalLeagueId, season));
   const teams: ImportedTeam[] = [];
   // Sequencial, não Promise.all: disparar todas as buscas de time em
   // paralelo ignoraria o espaçamento entre chamadas e estouraria o limite

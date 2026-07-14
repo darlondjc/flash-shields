@@ -76,7 +76,12 @@ export async function runSync(): Promise<SyncResult> {
         updatedAt: FieldValue.serverTimestamp(),
       });
 
-      const teams = await fetchTeamsForLeague(get, config.externalId, currentSeason(config.regionId));
+      const teams = await fetchTeamsForLeague(
+        get,
+        config.externalId,
+        config.season ?? currentSeason(config.regionId),
+        config.teamNames,
+      );
 
       await mapWithConcurrency(teams, TEAM_CONCURRENCY, async team => {
         const teamBadgeUrl = await uploadBadge(`badges/teams/${team.externalId}.png`, team.badgeUrl);
