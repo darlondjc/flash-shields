@@ -12,6 +12,7 @@ import { LeagueBadge } from '../../shared/ui/league-badge';
   imports: [RouterLink, HugeiconsIconComponent, LeagueBadge],
   templateUrl: './stats.html',
   styleUrl: './stats.scss',
+  host: { 'data-accent': 'blue' },
 })
 export class Stats {
   readonly store = inject(StatsStore);

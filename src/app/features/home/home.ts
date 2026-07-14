@@ -14,6 +14,7 @@ interface HomeCard {
   title: string;
   subtitle: string;
   testId: string;
+  accent: 'green' | 'purple' | 'blue' | 'orange';
 }
 
 @Component({
@@ -28,9 +29,9 @@ export class Home {
   readonly Settings01Icon = Settings01Icon;
 
   readonly cards: HomeCard[] = [
-    { routerLink: '/estudo', icon: Book01Icon, title: 'Estudo', subtitle: 'Revisão espaçada', testId: 'home-estudo' },
-    { routerLink: '/jogos', icon: Quiz01Icon, title: 'Jogos', subtitle: 'Múltipla escolha e reverso', testId: 'home-jogos' },
-    { routerLink: '/stats', icon: ChartColumnIncreasingIcon, title: 'Stats', subtitle: 'Seu progresso', testId: 'home-stats' },
-    { routerLink: '/pesquisa', icon: Search01Icon, title: 'Pesquisa', subtitle: 'Times e ligas', testId: 'home-pesquisa' },
+    { routerLink: '/estudo', icon: Book01Icon, title: 'Estudo', subtitle: 'Revisão espaçada', testId: 'home-estudo', accent: 'green' },
+    { routerLink: '/jogos', icon: Quiz01Icon, title: 'Jogos', subtitle: 'Múltipla escolha e reverso', testId: 'home-jogos', accent: 'purple' },
+    { routerLink: '/stats', icon: ChartColumnIncreasingIcon, title: 'Stats', subtitle: 'Seu progresso', testId: 'home-stats', accent: 'blue' },
+    { routerLink: '/pesquisa', icon: Search01Icon, title: 'Pesquisa', subtitle: 'Times e ligas', testId: 'home-pesquisa', accent: 'orange' },
   ];
 }

@@ -33,6 +33,7 @@ const SEARCHABLE_LEAGUES = LEAGUES_TO_IMPORT.filter((config) => !config.comingSo
   imports: [RouterLink, HugeiconsIconComponent, LeagueBadge, TeamBadge],
   templateUrl: './search.html',
   styleUrl: './search.scss',
+  host: { 'data-accent': 'orange' },
 })
 export class Search {
   private deckService = inject(DeckService);

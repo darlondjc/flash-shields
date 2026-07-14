@@ -16,7 +16,12 @@
 <main class="screen">
   <div class="home-grid">
     @for (card of cards; track card.routerLink) {
-      <a [routerLink]="card.routerLink" class="card home-card" [attr.data-testid]="card.testId">
+      <a
+        [routerLink]="card.routerLink"
+        class="card home-card"
+        [attr.data-accent]="card.accent"
+        [attr.data-testid]="card.testId"
+      >
         <span class="home-card__icon">
           <hugeicons-icon [icon]="card.icon" [size]="24" [strokeWidth]="1.8" color="currentColor" />
         </span>

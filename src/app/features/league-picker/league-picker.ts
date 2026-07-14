@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
@@ -22,6 +22,7 @@ export type LeaguePickerAction = 'study' | 'play' | 'reverse';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, HugeiconsIconComponent, LeagueBadge],
   templateUrl: './league-picker.html',
+  host: { '[attr.data-accent]': 'accent()' },
 })
 export class LeaguePicker {
   private importService = inject(ImportService);
@@ -34,6 +35,10 @@ export class LeaguePicker {
   // routed to without route data.
   readonly actions = input<LeaguePickerAction[]>(['study', 'play', 'reverse']);
   readonly title = input('Selecionar liga');
+
+  // The picker serves both /estudo and /jogos, so it inherits the module
+  // accent from the route's actions instead of owning a fixed one.
+  readonly accent = computed(() => (this.actions().includes('study') ? 'green' : 'purple'));
 
   readonly leagueConfigs = LEAGUES_TO_IMPORT;
   readonly decks = signal<Deck[]>([]);
