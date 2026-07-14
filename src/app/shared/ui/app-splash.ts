@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
-// Boot splash following docs/splash-screen.png: the brand mark (green shield
-// with a ball) over a faint field of watermarked club crests, with the app
-// name, tagline and a loading pulse. Purely presentational — App owns the
-// show/fade/remove timing via the `leaving` input.
+// Boot splash following docs/splash-screen.png: the brand mark (the flat
+// two-tone shield from docs/icon.png, same artwork as the favicon) over a
+// faint field of watermarked club crests, with the app name, tagline and a
+// loading pulse. Purely presentational — App owns the show/fade/remove
+// timing via the `leaving` input.
 @Component({
   selector: 'app-splash',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,33 +55,30 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     <div class="splash__brand">
       <svg class="splash__logo" viewBox="0 0 140 160" role="img" aria-label="Escudos Flashcards">
         <defs>
-          <linearGradient id="splash-shield" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#37a94c" />
-            <stop offset="1" stop-color="#1e7e34" />
+          <!-- Hard stop at the middle recreates the icon's vertical fold. -->
+          <linearGradient id="splash-shield" x1="0" y1="0" x2="140" y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset="0.5" stop-color="#2dae48" />
+            <stop offset="0.5" stop-color="#128d3e" />
           </linearGradient>
           <clipPath id="splash-ball">
-            <circle cx="70" cy="80" r="30" />
+            <circle cx="70" cy="80" r="24.5" />
           </clipPath>
         </defs>
         <path
           d="M70 6 L130 25 V84 C130 121 105 146 70 156 C35 146 10 121 10 84 V25 Z"
           fill="url(#splash-shield)"
         />
-        <path
-          d="M70 16 L120 32 V83 C120 114 99 136 70 145 C41 136 20 114 20 83 V32 Z"
-          fill="none"
-          stroke="#ffffff"
-          stroke-width="4"
-        />
-        <g clip-path="url(#splash-ball)">
+        <g transform="translate(70 80) scale(1.28) translate(-70 -80)">
           <circle cx="70" cy="80" r="30" fill="#ffffff" />
-          <polygon points="70,69 80.5,76.6 76.5,89 63.5,89 59.5,76.6" fill="#1e2b4f" />
-          <polygon points="86.5,49.3 96,55.3 93.5,65.8 83,67 78.5,57.5" fill="#1e2b4f" />
-          <polygon points="103,84.7 107,94.5 100,102.5 90.5,98.5 91.5,88 " fill="#1e2b4f" />
-          <polygon points="70,113 79.5,108.5 79,98 70,104.5 61,98 60.5,108.5" fill="#1e2b4f" />
-          <polygon points="37,84.7 33,94.5 40,102.5 49.5,98.5 48.5,88" fill="#1e2b4f" />
-          <polygon points="53.5,49.3 44,55.3 46.5,65.8 57,67 61.5,57.5" fill="#1e2b4f" />
-          <circle cx="70" cy="80" r="29" fill="none" stroke="#1e2b4f" stroke-width="2" />
+          <!-- Clipping inside the white circle leaves the thick white ring. -->
+          <g clip-path="url(#splash-ball)" fill="url(#splash-shield)">
+            <polygon points="70,69 80.5,76.6 76.5,89 63.5,89 59.5,76.6" />
+            <polygon points="86.5,49.3 96,55.3 93.5,65.8 83,67 78.5,57.5" />
+            <polygon points="103,84.7 107,94.5 100,102.5 90.5,98.5 91.5,88" />
+            <polygon points="70,113 79.5,108.5 79,98 70,104.5 61,98 60.5,108.5" />
+            <polygon points="37,84.7 33,94.5 40,102.5 49.5,98.5 48.5,88" />
+            <polygon points="53.5,49.3 44,55.3 46.5,65.8 57,67 61.5,57.5" />
+          </g>
         </g>
       </svg>
 
