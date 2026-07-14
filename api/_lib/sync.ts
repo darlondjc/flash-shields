@@ -66,16 +66,6 @@ export async function runSync(): Promise<SyncResult> {
       const details = await fetchLeagueDetails(get, config.externalId);
       const badgeUrl = await uploadBadge(`badges/leagues/${config.externalId}.png`, details.badgeUrl);
 
-      await db.collection('leagues').doc(config.externalId).set({
-        name: config.name,
-        country: config.country,
-        regionId: config.regionId,
-        sport: 'soccer',
-        badgeSourceUrl: details.badgeUrl ?? null,
-        badgeUrl: badgeUrl ?? null,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-
       const teams = await fetchTeamsForLeague(
         get,
         config.externalId,
@@ -103,6 +93,20 @@ export async function runSync(): Promise<SyncResult> {
           { merge: true },
         );
         result.teamsUpserted++;
+      });
+
+      // O doc da liga (com updatedAt) só é gravado depois dos times: é ele
+      // que marca a liga como "fresca" pro skip de 24h acima, e gravar antes
+      // fazia um timeout no meio dos times deixar a liga incompleta e ainda
+      // assim pulada nas reentradas seguintes.
+      await db.collection('leagues').doc(config.externalId).set({
+        name: config.name,
+        country: config.country,
+        regionId: config.regionId,
+        sport: 'soccer',
+        badgeSourceUrl: details.badgeUrl ?? null,
+        badgeUrl: badgeUrl ?? null,
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       result.leaguesSynced++;

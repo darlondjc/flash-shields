@@ -17,6 +17,15 @@ export interface TheSportsDbTeam {
   strBadge: string | null;
   intFormedYear: string | null;
   idLeague: string | null;
+  // Competições secundárias do time (copas nacionais/continentais): um clube
+  // da Libertadores tem o campeonato nacional como idLeague e a copa em um
+  // dos idLeague2..7.
+  idLeague2?: string | null;
+  idLeague3?: string | null;
+  idLeague4?: string | null;
+  idLeague5?: string | null;
+  idLeague6?: string | null;
+  idLeague7?: string | null;
   strSport?: string | null;
   strStadium: string | null;
   strWebsite: string | null;
@@ -110,10 +119,17 @@ export async function fetchTeamByName(get: ThesportsdbGet, name: string, externa
   // dá o benefício da dúvida em vez de descartar.
   const candidates = (response.teams ?? []).filter(team => team.strSport == null || team.strSport === 'Soccer');
   // Nomes de time podem colidir entre países (ex.: "América" existe no
-  // Brasil e no México), então prioriza o resultado cujo idLeague bate com
-  // a liga que estamos importando; sem isso, usa o primeiro resultado.
-  const match = candidates.find(team => team.idLeague === externalLeagueId) ?? candidates[0];
+  // Brasil e no México), então prioriza o resultado que disputa a liga que
+  // estamos importando — olhando também as competições secundárias
+  // (idLeague2..7), porque um clube de copa continental/nacional tem o
+  // campeonato doméstico como liga primária. Sem match, usa o primeiro.
+  const match = candidates.find(team => teamPlaysInLeague(team, externalLeagueId)) ?? candidates[0];
   return match ? mapTeam(match) : null;
+}
+
+function teamPlaysInLeague(team: TheSportsDbTeam, externalLeagueId: string): boolean {
+  return [team.idLeague, team.idLeague2, team.idLeague3, team.idLeague4, team.idLeague5, team.idLeague6, team.idLeague7]
+    .includes(externalLeagueId);
 }
 
 // knownTeamNames pula a descoberta por rodadas: torneios de seleções têm

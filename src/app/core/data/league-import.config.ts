@@ -34,6 +34,76 @@ export const LEAGUES_TO_IMPORT: LeagueImportConfig[] = [
   { externalId: '4404', name: 'Brasileirão Série B', country: 'Brasil', regionId: 'south-america' },
   { externalId: '4625', name: 'Brasileirão Série C', country: 'Brasil', regionId: 'south-america' },
   { externalId: '5079', name: 'Brasileirão Série D', country: 'Brasil', regionId: 'south-america' },
+  {
+    externalId: '4725',
+    name: 'Copa do Brasil',
+    country: 'Brasil',
+    regionId: 'south-america',
+    // A Copa do Brasil não é descobrível por rodadas (as fases usam rótulos
+    // de intRound fora do scan sequencial), então o elenco é fixado por
+    // edição: os clubes da terceira fase em diante de 2026, enumerados via
+    // eventsday.php — o recorte com todos os grandes que a API expõe inteiro
+    // na chave gratuita (a edição completa tem 91 clubes, a maioria de fases
+    // preliminares).
+    teamNames: [
+      'Athletic Club-MG', 'Atlético Mineiro', 'Barra', 'Botafogo', 'Ceará',
+      'Chapecoense', 'Corinthians', 'Cruzeiro', 'Flamengo', 'Fluminense',
+      'Fortaleza', 'Goiás', 'Grêmio', 'Internacional', 'Mirassol',
+      'Operário Ferroviário', 'Palmeiras', 'Paysandu', 'Remo', 'Santos',
+      'Vasco da Gama', 'Vitória',
+    ],
+  },
+  {
+    externalId: '4346',
+    name: 'MLS',
+    country: 'Estados Unidos',
+    regionId: 'north-america',
+    // A descoberta por rodadas acha 27 dos 30 clubes na chave gratuita (o
+    // corte de 5 jogos/rodada esconde alguns), então o elenco 2026 vai fixo.
+    teamNames: [
+      'Atlanta United', 'Austin FC', 'CF Montréal', 'Charlotte FC', 'Chicago Fire',
+      'Colorado Rapids', 'Columbus Crew', 'DC United', 'FC Cincinnati', 'FC Dallas',
+      'Houston Dynamo', 'Inter Miami', 'LA Galaxy', 'Los Angeles FC', 'Minnesota United',
+      'Nashville SC', 'New England Revolution', 'New York City FC', 'New York Red Bulls',
+      'Orlando City', 'Philadelphia Union', 'Portland Timbers', 'Real Salt Lake',
+      'San Diego FC', 'San Jose Earthquakes', 'Seattle Sounders', 'Sporting Kansas City',
+      'St. Louis City SC', 'Toronto FC', 'Vancouver Whitecaps',
+    ],
+  },
+  // Copas continentais de clubes: o elenco muda por edição, então segue fixo
+  // na edição corrente (fase de grupos, enumerada via eventsday.php) — a
+  // descoberta por rodadas cobre só ~30 dos 32 na chave gratuita.
+  {
+    externalId: '4501',
+    name: 'Copa Libertadores',
+    country: 'Internacional',
+    regionId: 'south-america',
+    teamNames: [
+      'Always Ready', 'Atlético Junior', 'Barcelona SC', 'Boca Juniors', 'Bolívar',
+      'Cerro Porteño', 'Club Libertad', 'Coquimbo Unido', 'Corinthians', 'Cruzeiro',
+      'Cusco', 'Deportes Tolima', 'Deportivo La Guaira', 'Estudiantes de La Plata',
+      'Flamengo', 'Fluminense', 'Independiente Medellín', 'Independiente Rivadavia',
+      'Independiente Santa Fe', 'Independiente del Valle', 'LDU Quito', 'Lanús',
+      'Mirassol', 'Nacional Montevideo', 'Palmeiras', 'Peñarol', 'Platense',
+      'Rosario Central', 'Sporting Cristal', 'Universidad Católica', 'Universidad Central',
+      'Universitario',
+    ],
+  },
+  {
+    externalId: '4724',
+    name: 'Copa Sul-Americana',
+    country: 'Internacional',
+    regionId: 'south-america',
+    teamNames: [
+      'Academia Puerto Cabello', 'Alianza Atlético', 'América de Cali', 'Atlético Mineiro',
+      'Audax Italiano', 'Barracas Central', 'Blooming', 'Boston River', 'Botafogo',
+      'Bragantino', 'Carabobo', 'Caracas', 'Cienciano', 'Club Olimpia', 'Deportivo Cuenca',
+      'Deportivo Riestra', 'Grêmio', 'Independiente Petrolero', 'Juventud Las Piedras',
+      'Macará', 'Millonarios', 'Montevideo City Torque', "O'Higgins", 'Palestino',
+      'Racing Club', 'Recoleta', 'River Plate', 'San Lorenzo', 'Santos', 'São Paulo',
+      'Tigre', 'Vasco da Gama',
+    ],
+  },
   // IDs reais confirmados via lookupleague.php (4356 era a A-League australiana,
   // e copa-america/eurocopa não eram IDs). Elencos enumerados contra a API em
   // 2026-07: todas as seleções existem no TheSportsDB com escudo disponível.
