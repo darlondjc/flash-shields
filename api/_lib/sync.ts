@@ -58,7 +58,13 @@ export async function runSync(): Promise<SyncResult> {
       // reentrada avançar pro que falta, sem abrir mão do refresh semanal.
       const existing = await db.collection('leagues').doc(config.externalId).get();
       const updatedAt = existing.data()?.['updatedAt'] as FirebaseFirestore.Timestamp | undefined;
-      if (updatedAt && Date.now() - updatedAt.toMillis() < 24 * 60 * 60 * 1000) {
+      // rosterKey é a assinatura do elenco curado (teamNames) usado no último
+      // sync. Se o config mudou (ex.: corrigido um nome que resolvia pro time
+      // errado), a liga não pode ser considerada fresca mesmo dentro da
+      // janela de 24h — senão a correção só chegaria no ciclo seguinte.
+      const rosterKey = config.teamNames ? JSON.stringify(config.teamNames) : null;
+      const existingRosterKey = (existing.data()?.['rosterKey'] ?? null) as string | null;
+      if (updatedAt && Date.now() - updatedAt.toMillis() < 24 * 60 * 60 * 1000 && existingRosterKey === rosterKey) {
         result.leaguesSynced++;
         continue;
       }
@@ -95,6 +101,20 @@ export async function runSync(): Promise<SyncResult> {
         result.teamsUpserted++;
       });
 
+      // Remove da liga os times que saíram do elenco desde o último sync
+      // (elenco de copa muda por edição; ou um nome do config resolvia pro
+      // time errado e foi corrigido). Só desassocia (arrayRemove) — o doc do
+      // time fica, porque ele pode pertencer a outras ligas.
+      if (teams.length > 0) {
+        const validIds = new Set(teams.map(team => team.externalId));
+        const members = await db.collection('teams').where('leagueIds', 'array-contains', config.externalId).get();
+        for (const doc of members.docs) {
+          if (!validIds.has(doc.id)) {
+            await doc.ref.update({ leagueIds: FieldValue.arrayRemove(config.externalId) });
+          }
+        }
+      }
+
       // O doc da liga (com updatedAt) só é gravado depois dos times: é ele
       // que marca a liga como "fresca" pro skip de 24h acima, e gravar antes
       // fazia um timeout no meio dos times deixar a liga incompleta e ainda
@@ -106,6 +126,7 @@ export async function runSync(): Promise<SyncResult> {
         sport: 'soccer',
         badgeSourceUrl: details.badgeUrl ?? null,
         badgeUrl: badgeUrl ?? null,
+        rosterKey,
         updatedAt: FieldValue.serverTimestamp(),
       });
 

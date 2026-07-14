@@ -87,14 +87,32 @@ export class ImportService {
       config.season ?? currentSeason(config.regionId),
     );
 
+    const importedIds = new Set<string>();
     for (const imported of importedTeams) {
       const team = mapImportedTeamToTeam(imported, league.id);
+      importedIds.add(team.id);
       const existingTeam = await this.db.teams.get(team.id);
       if (existingTeam) {
         const mergedLeagueIds = Array.from(new Set([...existingTeam.leagueIds, ...team.leagueIds]));
         await this.db.teams.put({ ...existingTeam, ...team, leagueIds: mergedLeagueIds });
       } else {
         await this.db.teams.put(team);
+      }
+    }
+
+    // Remove times locais que saíram do elenco da liga (mesmo critério de
+    // pertencimento do DeckService): sem isso, um time importado errado e
+    // depois corrigido no backend continuaria no deck e na Pesquisa pra
+    // sempre. Só quando o import trouxe algo — uma resposta vazia não pode
+    // apagar a liga inteira local.
+    if (importedTeams.length > 0) {
+      const scopedPrefix = `ts-${config.externalId}-`;
+      const allTeams = await this.db.teams.toArray();
+      const staleIds = allTeams
+        .filter(team => (team.leagueIds.includes(league.id) || team.id.startsWith(scopedPrefix)) && !importedIds.has(team.id))
+        .map(team => team.id);
+      if (staleIds.length > 0) {
+        await this.db.teams.bulkDelete(staleIds);
       }
     }
 

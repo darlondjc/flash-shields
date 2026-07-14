@@ -101,6 +101,38 @@ describe('ImportService', () => {
     expect(secondTeam?.leagueIds).toEqual(['ts-4335']);
   });
 
+  it('removes local teams that left the league roster on re-import', async () => {
+    adapterSpy.fetchLeagueDetails.mockResolvedValue({ badgeUrl: undefined });
+    adapterSpy.fetchTeamsForLeague
+      .mockResolvedValueOnce([
+        { externalId: '1', name: 'Arsenal', alternateNames: [], country: 'England', badgeUrl: '' },
+        { externalId: '2', name: 'Wrong Team', alternateNames: [], country: 'England', badgeUrl: '' },
+      ])
+      .mockResolvedValueOnce([
+        { externalId: '1', name: 'Arsenal', alternateNames: [], country: 'England', badgeUrl: '' },
+      ]);
+
+    await service.importLeague(config);
+    await service.importLeague(config);
+
+    expect(await db.teams.get('ts-4328-1')).toBeTruthy();
+    expect(await db.teams.get('ts-4328-2')).toBeUndefined();
+  });
+
+  it('does not delete local teams when the import comes back empty', async () => {
+    adapterSpy.fetchLeagueDetails.mockResolvedValue({ badgeUrl: undefined });
+    adapterSpy.fetchTeamsForLeague
+      .mockResolvedValueOnce([
+        { externalId: '1', name: 'Arsenal', alternateNames: [], country: 'England', badgeUrl: '' },
+      ])
+      .mockResolvedValueOnce([]);
+
+    await service.importLeague(config);
+    await service.importLeague(config);
+
+    expect(await db.teams.get('ts-4328-1')).toBeTruthy();
+  });
+
   it('stores the league badge fetched from the adapter', async () => {
     adapterSpy.fetchTeamsForLeague.mockResolvedValue([]);
     adapterSpy.fetchLeagueDetails.mockResolvedValue({
