@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, effect, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, effect, signal, untracked, DestroyRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -9,6 +9,8 @@ import { GameMode } from '../../core/models/session.model';
 import { GameStore } from './game.store';
 import { Question } from './game.util';
 import { TeamBadge } from '../../shared/ui/team-badge';
+import { CrestTextRegionService } from '../../core/persistence/crest-text-region.service';
+import { CrestTextBox } from '../../core/models/crest-text-box.model';
 
 const AUTO_ADVANCE_DELAY_MS = 1200;
 
@@ -23,6 +25,7 @@ export class Game {
   readonly store = inject(GameStore);
   readonly route = inject(ActivatedRoute);
   private router = inject(Router);
+  private crestTextRegions = inject(CrestTextRegionService);
   readonly deckId = input.required<string>();
 
   readonly Home01Icon = Home01Icon;
@@ -35,6 +38,8 @@ export class Game {
   );
 
   private autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private readonly textRegionsByTeamId = signal<Map<string, CrestTextBox[]>>(new Map());
 
   constructor() {
     effect(() => {
@@ -56,7 +61,29 @@ export class Game {
       }
     });
 
+    effect(() => {
+      const question = this.store.current();
+      if (!question) return;
+
+      // Every badge that's actually visible needs its name masked: just the
+      // prompt in multiple-choice mode (the answer is picked from text
+      // options), but every option's shield in reverse mode — an unmasked
+      // name baked into any of those crests would let the user read the
+      // answer off the artwork instead of recognizing the shield.
+      const teams = this.store.mode() === 'reverse' ? question.options : [question.correctTeam];
+      for (const team of teams) {
+        if (untracked(() => this.textRegionsByTeamId().has(team.id))) continue;
+        this.crestTextRegions.getRegions(team).then(boxes => {
+          this.textRegionsByTeamId.update(map => new Map(map).set(team.id, boxes));
+        });
+      }
+    });
+
     inject(DestroyRef).onDestroy(() => this.clearAutoAdvance());
+  }
+
+  textRegionsFor(teamId: string): CrestTextBox[] {
+    return this.textRegionsByTeamId().get(teamId) ?? [];
   }
 
   private clearAutoAdvance() {

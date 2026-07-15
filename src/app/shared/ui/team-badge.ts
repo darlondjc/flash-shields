@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
 import { BadgeCacheService } from '../../core/persistence/badge-cache.service';
 import { Team } from '../../core/models/team.model';
+import { CrestTextBox } from '../../core/models/crest-text-box.model';
 
 const MAX_LOAD_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 600;
@@ -9,13 +10,24 @@ const RETRY_DELAY_MS = 600;
   selector: 'app-team-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    @if (failed()) {
-      <div class="team-badge team-badge--failed" [attr.aria-label]="team().name" role="img"></div>
-    } @else if (imageUrl(); as url) {
-      <img [src]="url" [alt]="team().name" class="team-badge" (error)="handleError()" />
-    } @else {
-      <div class="team-badge team-badge--loading" [attr.aria-label]="team().name"></div>
-    }
+    <div class="team-badge-wrap">
+      @if (failed()) {
+        <div class="team-badge team-badge--failed" [attr.aria-label]="team().name" role="img"></div>
+      } @else if (imageUrl(); as url) {
+        <img [src]="url" [alt]="team().name" class="team-badge" (error)="handleError()" />
+        @for (box of textRegions(); track $index) {
+          <div
+            class="crest-text-mask"
+            [style.top.%]="box.top"
+            [style.left.%]="box.left"
+            [style.width.%]="box.width"
+            [style.height.%]="box.height"
+          ></div>
+        }
+      } @else {
+        <div class="team-badge team-badge--loading" [attr.aria-label]="team().name"></div>
+      }
+    </div>
   `,
   styles: [
     `
@@ -23,6 +35,10 @@ const RETRY_DELAY_MS = 600;
          depends entirely on where it's placed (a single flashcard vs. a
          4-up grid need very different sizes), so each consumer caps
          app-team-badge's width via its own stylesheet. */
+      .team-badge-wrap {
+        position: relative;
+      }
+
       .team-badge {
         display: block;
         width: 100%;
@@ -30,6 +46,17 @@ const RETRY_DELAY_MS = 600;
         height: auto;
         object-fit: contain;
         margin: 0 auto;
+      }
+
+      /* Covers a region of the crest where the club name is printed as part
+         of the artwork (only passed in by consumers that want it hidden,
+         e.g. the Estudo flashcards) without altering the underlying image. */
+      .crest-text-mask {
+        position: absolute;
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        border-radius: 2px;
+        pointer-events: none;
       }
 
       .team-badge--loading {
@@ -64,6 +91,10 @@ const RETRY_DELAY_MS = 600;
 export class TeamBadge {
   private badgeCache = inject(BadgeCacheService);
   readonly team = input.required<Team>();
+  // Regions (in % of the image) to blur over the crest artwork — only
+  // relevant to consumers that don't want a name baked into the badge to
+  // give away the answer (e.g. Estudo). Left empty, nothing is drawn.
+  readonly textRegions = input<CrestTextBox[]>([]);
   // Emitted once loading has failed MAX_LOAD_ATTEMPTS times in a row — lets a
   // consumer (e.g. the game grid) swap in a different team rather than leave
   // a permanently broken badge on screen.

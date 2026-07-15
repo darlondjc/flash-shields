@@ -6,6 +6,7 @@ import { Game } from './game';
 import { GameStore } from './game.store';
 import { Team } from '../../core/models/team.model';
 import { MultipleChoiceQuestion, ReverseQuestion } from './game.util';
+import { CrestTextRegionService } from '../../core/persistence/crest-text-region.service';
 
 function makeTeam(id: string): Team {
   return {
@@ -56,7 +57,11 @@ describe('Game', () => {
 
     await TestBed.configureTestingModule({
       imports: [Game],
-      providers: [provideRouter([]), { provide: GameStore, useValue: storeSpy }],
+      providers: [
+        provideRouter([]),
+        { provide: GameStore, useValue: storeSpy },
+        { provide: CrestTextRegionService, useValue: { getRegions: vi.fn().mockResolvedValue([]) } },
+      ],
     }).compileComponents();
     fixture = TestBed.createComponent(Game);
     fixture.componentRef.setInput('deckId', 'deck-1');
