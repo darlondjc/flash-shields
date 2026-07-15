@@ -45,8 +45,7 @@
             <p class="quiz-card__prompt">Qual é o time deste escudo?</p>
             <app-team-badge
               [team]="question.correctTeam"
-              [textRegions]="textRegionsFor(question.correctTeam.id)"
-              [maskPending]="!crestReadyFor(question.correctTeam.id)"
+              variant="game"
               (loadFailed)="onBadgeLoadFailed(question, question.correctTeam.id)"
             />
           }
@@ -68,8 +67,7 @@
               >
                 <app-team-badge
                   [team]="option"
-                  [textRegions]="textRegionsFor(option.id)"
-                  [maskPending]="!crestReadyFor(option.id)"
+                  variant="game"
                   (loadFailed)="onBadgeLoadFailed(question, option.id)"
                 />
               </button>

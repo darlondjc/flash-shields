@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, effect, signal, untracked, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, effect, DestroyRef } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
@@ -10,10 +10,7 @@ import { GameMode } from '../../core/models/session.model';
 import { DeckService } from '../../core/decks/deck.service';
 import { GameStore } from './game.store';
 import { Question } from './game.util';
-import { Team } from '../../core/models/team.model';
 import { TeamBadge } from '../../shared/ui/team-badge';
-import { CrestTextRegionService } from '../../core/persistence/crest-text-region.service';
-import { CrestTextBox } from '../../core/models/crest-text-box.model';
 
 const AUTO_ADVANCE_DELAY_MS = 1200;
 
@@ -30,7 +27,6 @@ export class Game {
   readonly route = inject(ActivatedRoute);
   private router = inject(Router);
   private deckService = inject(DeckService);
-  private crestTextRegions = inject(CrestTextRegionService);
   readonly deckId = input.required<string>();
 
   readonly Home01Icon = Home01Icon;
@@ -44,8 +40,6 @@ export class Game {
   );
 
   private autoAdvanceTimer: ReturnType<typeof setTimeout> | null = null;
-
-  private readonly textRegionsByTeamId = signal<Map<string, CrestTextBox[]>>(new Map());
 
   constructor() {
     effect(() => {
@@ -67,40 +61,7 @@ export class Game {
       }
     });
 
-    effect(() => {
-      // Kick off detection for every badge in the whole round as soon as
-      // it's loaded, not just the current question's — OCR takes a couple
-      // of seconds per crest, so waiting until a question is on screen to
-      // start it would flash the un-masked name for however long that
-      // takes. Whether a badge is visible before its detection finishes is
-      // still handled by textRegionsFor()/crestReadyFor() gating the image.
-      const questions = this.store.questions();
-      const teams = new Map<string, Team>();
-      for (const question of questions) {
-        teams.set(question.correctTeam.id, question.correctTeam);
-        for (const option of question.options) teams.set(option.id, option);
-      }
-      for (const team of teams.values()) {
-        if (untracked(() => this.textRegionsByTeamId().has(team.id))) continue;
-        this.crestTextRegions.getRegions(team).then(boxes => {
-          this.textRegionsByTeamId.update(map => new Map(map).set(team.id, boxes));
-        });
-      }
-    });
-
     inject(DestroyRef).onDestroy(() => this.clearAutoAdvance());
-  }
-
-  textRegionsFor(teamId: string): CrestTextBox[] {
-    return this.textRegionsByTeamId().get(teamId) ?? [];
-  }
-
-  // A team's crest must stay hidden until we know whether it needs masking —
-  // an empty result and "not checked yet" both read as "no boxes to draw",
-  // so without this the badge would render un-masked for however long OCR
-  // takes on a never-before-seen team.
-  crestReadyFor(teamId: string): boolean {
-    return this.textRegionsByTeamId().has(teamId);
   }
 
   private clearAutoAdvance() {

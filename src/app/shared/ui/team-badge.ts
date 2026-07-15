@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
 import { BadgeCacheService } from '../../core/persistence/badge-cache.service';
 import { Team } from '../../core/models/team.model';
-import { CrestTextBox } from '../../core/models/crest-text-box.model';
 
 const MAX_LOAD_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 600;
+
+type BadgeVariant = 'answer' | 'question' | 'game';
 
 @Component({
   selector: 'app-team-badge',
@@ -14,20 +15,7 @@ const RETRY_DELAY_MS = 600;
       @if (failed()) {
         <div class="team-badge team-badge--failed" [attr.aria-label]="team().name" role="img"></div>
       } @else if (imageUrl(); as url) {
-        @if (maskPending()) {
-          <div class="team-badge team-badge--loading" [attr.aria-label]="team().name"></div>
-        } @else {
-          <img [src]="url" [alt]="team().name" class="team-badge" (error)="handleError()" />
-          @for (box of textRegions(); track $index) {
-            <div
-              class="crest-text-mask"
-              [style.top.%]="box.top"
-              [style.left.%]="box.left"
-              [style.width.%]="box.width"
-              [style.height.%]="box.height"
-            ></div>
-          }
-        }
+        <img [src]="url" [alt]="team().name" class="team-badge" (error)="handleError()" />
       } @else {
         <div class="team-badge team-badge--loading" [attr.aria-label]="team().name"></div>
       }
@@ -50,17 +38,6 @@ const RETRY_DELAY_MS = 600;
         height: auto;
         object-fit: contain;
         margin: 0 auto;
-      }
-
-      /* Covers a region of the crest where the club name is printed as part
-         of the artwork (only passed in by consumers that want it hidden,
-         e.g. the Estudo flashcards) without altering the underlying image. */
-      .crest-text-mask {
-        position: absolute;
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-        border-radius: 2px;
-        pointer-events: none;
       }
 
       .team-badge--loading {
@@ -95,19 +72,11 @@ const RETRY_DELAY_MS = 600;
 export class TeamBadge {
   private badgeCache = inject(BadgeCacheService);
   readonly team = input.required<Team>();
-  // Regions (in % of the image) to blur over the crest artwork — only
-  // relevant to consumers that don't want a name baked into the badge to
-  // give away the answer (e.g. Jogos). Left empty, nothing is drawn.
-  readonly textRegions = input<CrestTextBox[]>([]);
-  // While true, the crest itself is held back behind the loading shimmer
-  // even once the image bytes are ready — used by consumers who compute
-  // textRegions asynchronously (OCR) so the un-masked name is never shown
-  // for the second or two detection takes on a never-before-seen team.
-  readonly maskPending = input(false);
-  // 'question' usa badgeQuestionUrl (escudo sem o nome do time) quando o time
-  // tem um; caso contrário cai no escudo normal. Cada variante tem sua própria
+  // 'question' usa badgeQuestionUrl, 'game' usa badgeGameUrl (variantes do
+  // escudo sem o nome do time, geradas offline) quando o time tem uma;
+  // caso contrário cai no escudo normal. Cada variante tem sua própria
   // entrada no cache de blobs.
-  readonly variant = input<'answer' | 'question'>('answer');
+  readonly variant = input<BadgeVariant>('answer');
   // Emitted once loading has failed MAX_LOAD_ATTEMPTS times in a row — lets a
   // consumer (e.g. the game grid) swap in a different team rather than leave
   // a permanently broken badge on screen.
@@ -130,9 +99,12 @@ export class TeamBadge {
   constructor() {
     effect(onCleanup => {
       const currentTeam = this.team();
-      const useQuestion = this.variant() === 'question' && !!currentTeam.badgeQuestionUrl;
-      this.sourceUrl = useQuestion ? currentTeam.badgeQuestionUrl! : currentTeam.badgeUrl;
-      this.cacheKey = useQuestion ? `${currentTeam.id}:question` : currentTeam.id;
+      const variant = this.variant();
+      const variantUrl = variant === 'question' ? currentTeam.badgeQuestionUrl
+        : variant === 'game' ? currentTeam.badgeGameUrl
+        : undefined;
+      this.sourceUrl = variantUrl ?? currentTeam.badgeUrl;
+      this.cacheKey = variantUrl ? `${currentTeam.id}:${variant}` : currentTeam.id;
       this.revokeCurrentUrl();
       this.imageUrl.set(null);
       this.failed.set(false);

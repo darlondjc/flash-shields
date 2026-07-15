@@ -24,6 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       country: data['country'] ?? '',
       badgeUrl: data['badgeUrl'] ?? '',
       badgeQuestionUrl: data['badgeQuestionUrl'] ?? undefined,
+      badgeGameUrl: data['badgeGameUrl'] ?? undefined,
       founded: data['founded'] ?? undefined,
       stadium: data['stadium'] ?? undefined,
       website: data['website'] ?? undefined,

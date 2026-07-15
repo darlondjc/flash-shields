@@ -30,8 +30,7 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"],
-            "allowedCommonJsDependencies": ["tesseract.js"]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {

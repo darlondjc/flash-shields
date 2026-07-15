@@ -1,0 +1,57 @@
+name: Generate game badge candidates
+
+# Roda algumas horas depois do sync semanal da Vercel (vercel.json:
+# "0 6 * * 1"), pra dar tempo dos escudos novos já estarem no Firestore.
+# Só gera candidatos (Firestore + Vercel Blob) — nunca publica sozinho, isso
+# continua manual via `node scripts/game-badges.mjs review` / `publish`
+# rodado localmente (scripts/game-badges.mjs tem o motivo comentado).
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/requirements.txt
+
+      # Vercel Blob signed tokens max out at 7 days, so there's no long-lived
+      # BLOB_READ_WRITE_TOKEN to store as a secret — mint a fresh one at the
+      # start of every run instead, scoped to just this run's lifetime, using
+      # a long-lived Vercel account token (VERCEL_TOKEN) to authenticate.
+      - name: Mint a short-lived Vercel Blob token
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          TOKEN_JSON=$(npx --yes vercel@latest blob signed-token \
+            --pathname "*" --operation put --operation get \
+            --valid-for 1d --json --token="$VERCEL_TOKEN")
+          echo "::add-mask::$(node -pe 'JSON.parse(process.argv[1]).token' "$TOKEN_JSON")"
+          node -e '
+            const token = JSON.parse(process.argv[1]).token;
+            require("node:fs").appendFileSync(process.env.GITHUB_ENV, `BLOB_READ_WRITE_TOKEN=${token}\n`);
+          ' "$TOKEN_JSON"
+
+      - name: Generate game badge candidates
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+        run: node scripts/game-badges.mjs generate

@@ -5,7 +5,6 @@ import { Team } from '../models/team.model';
 import { Deck } from '../models/deck.model';
 import { ReviewState } from '../models/review-state.model';
 import { Session } from '../models/session.model';
-import { CrestTextBox } from '../models/crest-text-box.model';
 
 export interface StoredReviewState extends ReviewState {
   id: string;
@@ -16,11 +15,6 @@ export interface StoredBadgeBlob {
   blob: Blob;
 }
 
-export interface StoredCrestTextRegion {
-  teamId: string;
-  boxes: CrestTextBox[];
-}
-
 @Injectable({ providedIn: 'root' })
 export class DbService extends Dexie {
   leagues!: Table<League, string>;
@@ -29,7 +23,6 @@ export class DbService extends Dexie {
   reviewStates!: Table<StoredReviewState, string>;
   badgeBlobs!: Table<StoredBadgeBlob, string>;
   sessions!: Table<Session, string>;
-  crestTextRegions!: Table<StoredCrestTextRegion, string>;
 
   constructor() {
     super('flash-shields');
@@ -42,9 +35,6 @@ export class DbService extends Dexie {
     });
     this.version(2).stores({
       sessions: 'id, deckId, mode, startedAt',
-    });
-    this.version(3).stores({
-      crestTextRegions: 'teamId',
     });
   }
 

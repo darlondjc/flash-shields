@@ -30,7 +30,6 @@
     "@vercel/blob": "^2.6.1",
     "dexie": "^4.4.4",
     "rxjs": "~7.8.0",
-    "tesseract.js": "^7.0.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

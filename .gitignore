@@ -56,3 +56,9 @@ node_modules/
 
 # Estado local do pipeline de variantes de escudo (scripts/question-badges.mjs)
 /badge-review/
+# Estado local do pipeline de variantes de escudo pro modo jogo (scripts/game-badges.mjs)
+/game-badge-review/
+*.pyc
+__pycache__/
+.env*
+.venv/
