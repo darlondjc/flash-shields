@@ -27,6 +27,7 @@ export function mapImportedTeamToTeam(imported: ImportedTeam, leagueId: string):
     country: imported.country,
     leagueIds: [leagueId],
     badgeUrl: imported.badgeUrl,
+    badgeQuestionUrl: imported.badgeQuestionUrl,
     founded: imported.founded,
     stadium: imported.stadium,
     website: imported.website,

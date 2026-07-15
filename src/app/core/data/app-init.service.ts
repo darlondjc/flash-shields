@@ -54,7 +54,7 @@ export class AppInitService {
   private async warmBadges(): Promise<void> {
     const [allTeams, allLeagues] = await Promise.all([this.db.teams.toArray(), this.leagueService.listLeagues()]);
     const leagueBadgeUrls = allLeagues.map(league => league.badgeUrl).filter((url): url is string => !!url);
-    const teamBadgeUrls = allTeams.map(team => team.badgeUrl).filter(Boolean);
+    const teamBadgeUrls = allTeams.flatMap(team => [team.badgeUrl, team.badgeQuestionUrl]).filter((url): url is string => !!url);
     const urls = [...leagueBadgeUrls, ...teamBadgeUrls];
 
     await warmImageCache(urls);

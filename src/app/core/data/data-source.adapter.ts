@@ -5,6 +5,7 @@ export interface ImportedTeam {
   alternateNames: string[];
   country: string;
   badgeUrl: string;
+  badgeQuestionUrl?: string;
   founded?: number;
   stadium?: string;
   website?: string;

@@ -43,7 +43,7 @@
           }
           @default {
             <p class="quiz-card__prompt">Qual é o time deste escudo?</p>
-            <app-team-badge [team]="question.correctTeam" (loadFailed)="onBadgeLoadFailed(question, question.correctTeam.id)" />
+            <app-team-badge [team]="question.correctTeam" variant="question" (loadFailed)="onBadgeLoadFailed(question, question.correctTeam.id)" />
           }
         }
       </section>
@@ -61,7 +61,7 @@
                 [disabled]="!!store.selectedTeamId()"
                 (click)="store.select(option.id)"
               >
-                <app-team-badge [team]="option" (loadFailed)="onBadgeLoadFailed(question, option.id)" />
+                <app-team-badge [team]="option" variant="question" (loadFailed)="onBadgeLoadFailed(question, option.id)" />
               </button>
             }
           </div>

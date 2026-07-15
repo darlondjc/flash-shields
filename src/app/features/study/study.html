@@ -22,13 +22,19 @@
     <section class="card study-card">
       <p class="study-card__prompt">De qual time é este escudo?</p>
 
-      <button type="button" class="study-card__badge-btn" data-testid="reveal" (click)="store.reveal()" [disabled]="store.revealed()">
-        <app-team-badge [team]="team" />
-        @if (!store.revealed()) {
-          <span class="study-card__hint">Toque para revelar</span>
-        } @else {
-          <span class="study-card__answer">{{ team.name }}</span>
-        }
+      <button type="button" class="study-card__badge-btn" data-testid="reveal" [class.is-flipped]="store.revealed()" (click)="store.reveal()" [disabled]="store.revealed()">
+        <span class="flip">
+          <span class="flip__face flip__face--front" [attr.aria-hidden]="store.revealed() ? true : null">
+            <app-team-badge [team]="team" variant="question" />
+            <span class="study-card__hint">Toque para revelar</span>
+          </span>
+          <span class="flip__face flip__face--back" [attr.aria-hidden]="store.revealed() ? null : true">
+            <app-team-badge [team]="team" />
+            @if (store.revealed()) {
+              <span class="study-card__answer">{{ team.name }}</span>
+            }
+          </span>
+        </span>
       </button>
     </section>
 

@@ -23,7 +23,8 @@ test('import a league, study one card, and play one round', async ({ page }) => 
   await page.getByTestId('study-link').click();
   // The team-badge placeholder has no intrinsic size until the real badge
   // image finishes fetching from the network, so give it room to load.
-  await expect(page.locator('.team-badge')).toBeVisible({ timeout: 30_000 });
+  // The flip card renders one badge per face, hence .first().
+  await expect(page.locator('.team-badge').first()).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('reveal').click();
   await page.getByRole('button', { name: 'Bom' }).click();
 

@@ -53,3 +53,6 @@ node_modules/
 .vercel
 .env
 .env*.local
+
+# Estado local do pipeline de variantes de escudo (scripts/question-badges.mjs)
+/badge-review/

@@ -33,14 +33,12 @@
 }
 
 .study-card__badge-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1rem;
+  display: block;
   background: none;
   border: none;
   width: 100%;
   padding: 0;
+  perspective: 900px;
 
   &:disabled {
     cursor: default;
@@ -51,6 +49,39 @@
     width: 100%;
     max-width: 168px;
     margin: 0 auto;
+  }
+}
+
+.flip {
+  display: grid;
+  width: 100%;
+  transform-style: preserve-3d;
+  // Transition only lives on .is-flipped, so when the next card arrives and
+  // the flag resets, the card snaps back to the front instantly instead of
+  // playing the flip in reverse over the new team's badge.
+  .is-flipped & {
+    transform: rotateY(180deg);
+    transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+.flip__face {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  backface-visibility: hidden;
+}
+
+.flip__face--back {
+  transform: rotateY(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip,
+  .is-flipped .flip {
+    transition: none;
   }
 }
 
