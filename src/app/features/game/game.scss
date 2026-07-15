@@ -23,7 +23,7 @@
 }
 
 .pill--points {
-  color: var(--green);
+  color: var(--accent);
 }
 
 .pill--streak {
@@ -182,7 +182,7 @@
   height: 100%;
   width: 0%;
   border-radius: inherit;
-  background: var(--green);
+  background: var(--accent);
   animation-name: auto-advance-fill;
   animation-timing-function: linear;
   animation-fill-mode: forwards;

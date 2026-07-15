@@ -15,6 +15,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
   Itália: '🇮🇹',
   'Países Baixos': '🇳🇱',
   Portugal: '🇵🇹',
+  'Estados Unidos': '🇺🇸',
   Internacional: '🌍',
 };
 

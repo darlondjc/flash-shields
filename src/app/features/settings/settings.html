@@ -30,25 +30,56 @@
 
   <section aria-label="Dados locais" class="settings-section">
     <p class="eyebrow">Dados do usuário e importações</p>
-    @if (hasImportedLeagues()) {
-      <button
-        type="button"
-        class="secondary-action"
-        data-testid="refresh-imported-data"
-        [disabled]="importService.isImporting()"
-        (click)="refreshImportedData()"
-      >
-        <hugeicons-icon [icon]="RefreshIcon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
-        @if (importService.isImporting()) {
-          Atualizando{{ importService.progress() ? ' (' + importService.progress()!.done + '/' + importService.progress()!.total + ')' : '' }}...
-        } @else {
-          Atualizar dados
-        }
+    <div class="data-actions">
+      @if (hasImportedLeagues()) {
+        <button
+          type="button"
+          class="secondary-action"
+          data-testid="refresh-imported-data"
+          [disabled]="importService.isImporting()"
+          (click)="refreshImportedData()"
+        >
+          <hugeicons-icon [icon]="RefreshIcon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+          @if (importService.isImporting()) {
+            Atualizando{{ importService.progress() ? ' (' + importService.progress()!.done + '/' + importService.progress()!.total + ')' : '' }}...
+          } @else {
+            Atualizar dados
+          }
+        </button>
+      }
+      <button type="button" class="danger-action" data-testid="clear-local-data" (click)="clearLocalData()">
+        <hugeicons-icon [icon]="Delete01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
+        Resetar dados
       </button>
+    </div>
+
+    @if (dataStats(); as stats) {
+      <div class="card data-summary" data-testid="data-summary">
+        <div class="data-summary__stats">
+          <div class="data-summary__stat">
+            <p class="data-summary__value">{{ stats.countries }}</p>
+            <p class="data-summary__label">Países</p>
+          </div>
+          <div class="data-summary__stat">
+            <p class="data-summary__value">{{ stats.leagues }}</p>
+            <p class="data-summary__label">Ligas</p>
+          </div>
+          <div class="data-summary__stat">
+            <p class="data-summary__value">{{ stats.teams }}</p>
+            <p class="data-summary__label">Times</p>
+          </div>
+        </div>
+        <dl class="data-summary__meta">
+          <div>
+            <dt>Última verificação</dt>
+            <dd>{{ importService.lastCheckedAt() ? (importService.lastCheckedAt() | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd>
+          </div>
+          <div>
+            <dt>Última atualização</dt>
+            <dd>{{ importService.lastUpdatedAt() ? (importService.lastUpdatedAt() | date: 'dd/MM/yyyy HH:mm') : '—' }}</dd>
+          </div>
+        </dl>
+      </div>
     }
-    <button type="button" class="danger-action" data-testid="clear-local-data" (click)="clearLocalData()">
-      <hugeicons-icon [icon]="Delete01Icon" [size]="18" [strokeWidth]="1.8" color="currentColor" />
-      Limpar tudo e reiniciar
-    </button>
   </section>
 </main>

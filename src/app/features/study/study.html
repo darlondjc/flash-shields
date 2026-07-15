@@ -1,10 +1,13 @@
 <header class="app-header">
   <div class="app-header__side">
+    <button type="button" class="icon-btn" aria-label="Voltar para a liga" data-testid="back-to-league" (click)="backToLeague()">
+      <hugeicons-icon [icon]="ArrowLeft02Icon" [size]="20" [strokeWidth]="1.8" color="currentColor" />
+    </button>
     <button type="button" class="icon-btn" aria-label="Início" (click)="back()">
       <hugeicons-icon [icon]="Home01Icon" [size]="20" [strokeWidth]="1.8" color="currentColor" />
     </button>
   </div>
-  <div class="app-header__title">Estudo (SRS)</div>
+  <div class="app-header__title">Estudo</div>
   <div class="app-header__side">
     <span class="counter-pill">{{ store.total() - store.remaining() }} / {{ store.total() }}</span>
   </div>
@@ -19,13 +22,19 @@
     <section class="card study-card">
       <p class="study-card__prompt">De qual time é este escudo?</p>
 
-      <button type="button" class="study-card__badge-btn" data-testid="reveal" (click)="store.reveal()" [disabled]="store.revealed()">
-        <app-team-badge [team]="team" />
-        @if (!store.revealed()) {
-          <span class="study-card__hint">Toque para revelar</span>
-        } @else {
-          <span class="study-card__answer">{{ team.name }}</span>
-        }
+      <button type="button" class="study-card__badge-btn" data-testid="reveal" [class.is-flipped]="store.revealed()" (click)="store.reveal()" [disabled]="store.revealed()">
+        <span class="flip">
+          <span class="flip__face flip__face--front" [attr.aria-hidden]="store.revealed() ? true : null">
+            <app-team-badge [team]="team" variant="question" />
+            <span class="study-card__hint">Toque para revelar</span>
+          </span>
+          <span class="flip__face flip__face--back" [attr.aria-hidden]="store.revealed() ? null : true">
+            <app-team-badge [team]="team" />
+            @if (store.revealed()) {
+              <span class="study-card__answer">{{ team.name }}</span>
+            }
+          </span>
+        </span>
       </button>
     </section>
 

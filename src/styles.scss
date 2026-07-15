@@ -16,6 +16,7 @@
   --red: #ef4444;
   --red-text: #fca5a5;
   --orange: #f59e0b;
+  --orange-dim: #35250c;
   --yellow: #facc15;
   --purple: #8b5cf6;
   --purple-dim: #3730a3;
@@ -53,11 +54,41 @@
   --blue-dim: #dbeafe;
   --red-text: #b91c1c;
   --purple-dim: #ede9fe;
+  --orange-dim: #fef0d7;
 
   --shell-glow: var(--bg);
   --shell-shadow: rgba(15, 23, 42, 0.12);
 
   --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+/* Module accent: each section owns a hue (Estudo green, Jogos purple, Stats
+   blue, Pesquisa orange). A feature root (or home card) sets data-accent and
+   every shared primitive below tints itself through these three variables,
+   so screens never hardcode their module color. Green is the brand default
+   for anything that doesn't opt in (settings, splash). */
+:root {
+  --accent: var(--green);
+  --accent-dim: var(--green-dim);
+  --accent-contrast: #052e16;
+}
+
+[data-accent='purple'] {
+  --accent: var(--purple);
+  --accent-dim: var(--purple-dim);
+  --accent-contrast: #2e1065;
+}
+
+[data-accent='blue'] {
+  --accent: var(--blue);
+  --accent-dim: var(--blue-dim);
+  --accent-contrast: #172554;
+}
+
+[data-accent='orange'] {
+  --accent: var(--orange);
+  --accent-dim: var(--orange-dim);
+  --accent-contrast: #3a1c00;
 }
 
 * {
@@ -149,8 +180,8 @@ button {
 }
 
 .btn--primary {
-  background: var(--green);
-  color: #052e16;
+  background: var(--accent);
+  color: var(--accent-contrast);
 
   &:not(:disabled):hover {
     filter: brightness(1.08);
@@ -285,7 +316,7 @@ button {
   transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
-    border-color: var(--green);
+    border-color: var(--accent);
     transform: translateY(-2px);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.1);
   }
@@ -377,14 +408,14 @@ button {
 }
 
 .pill--success {
-  background: var(--green-dim);
-  color: var(--green);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .league-card__cta {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--green);
+  color: var(--accent);
 }
 
 .league-card__status {

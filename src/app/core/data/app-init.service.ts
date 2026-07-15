@@ -13,8 +13,8 @@ export class AppInitService {
   private leagueService = inject(LeagueService);
   private db = inject(DbService);
 
-  // comingSoon leagues (Copa do Mundo etc.) are placeholders with no importable
-  // data, so they never take part in the boot-time import.
+  // comingSoon leagues are placeholders with no importable data, so they
+  // never take part in the boot-time import.
   private readonly leaguesToImport = LEAGUES_TO_IMPORT.filter(config => !config.comingSoon);
 
   // Runs without blocking the UI: ImportService.isImporting/progress drive a
@@ -23,6 +23,7 @@ export class AppInitService {
   // instead of waiting behind a splash screen.
   async run(): Promise<void> {
     const missing = await this.findMissingLeagues();
+    this.importService.markDataChecked();
     if (missing.length === 0) return;
 
     await this.importService.importLeagues(missing);
@@ -53,7 +54,7 @@ export class AppInitService {
   private async warmBadges(): Promise<void> {
     const [allTeams, allLeagues] = await Promise.all([this.db.teams.toArray(), this.leagueService.listLeagues()]);
     const leagueBadgeUrls = allLeagues.map(league => league.badgeUrl).filter((url): url is string => !!url);
-    const teamBadgeUrls = allTeams.map(team => team.badgeUrl).filter(Boolean);
+    const teamBadgeUrls = allTeams.flatMap(team => [team.badgeUrl, team.badgeQuestionUrl]).filter((url): url is string => !!url);
     const urls = [...leagueBadgeUrls, ...teamBadgeUrls];
 
     await warmImageCache(urls);

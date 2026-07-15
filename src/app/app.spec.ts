@@ -40,13 +40,35 @@ describe('App', () => {
     expect(fixture.nativeElement.querySelector('router-outlet')).toBeTruthy();
   });
 
+  it('shows the boot splash and dismisses it after the intro delay', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="app-splash"]')).toBeTruthy();
+
+    // Minimum display elapses → splash starts fading but is still in the DOM.
+    vi.advanceTimersByTime(3000);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="app-splash"]')).toBeTruthy();
+
+    // Fade-out finishes → splash leaves the DOM entirely.
+    vi.advanceTimersByTime(450);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[data-testid="app-splash"]')).toBeFalsy();
+
+    vi.useRealTimers();
+  });
+
   it('shows a non-blocking import banner with progress while importing', () => {
     importServiceSpy.isImporting.set(true);
     importServiceSpy.progress.set({ done: 2, total: 5 });
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
 
-    const banner: HTMLElement = fixture.nativeElement.querySelector('[data-testid="import-banner"]');
+    const banner: HTMLElement = fixture.nativeElement.querySelector(
+      '[data-testid="import-banner"]',
+    );
     expect(banner?.textContent).toContain('2/5');
     expect(fixture.nativeElement.querySelector('router-outlet')).toBeTruthy();
   });

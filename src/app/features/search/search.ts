@@ -5,11 +5,17 @@ import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
 import Search01Icon from '@hugeicons/core-free-icons/Search01Icon';
 import ArrowLeft02Icon from '@hugeicons/core-free-icons/ArrowLeft02Icon';
 import Exchange01Icon from '@hugeicons/core-free-icons/Exchange01Icon';
+import Cancel01Icon from '@hugeicons/core-free-icons/Cancel01Icon';
 import { DeckService } from '../../core/decks/deck.service';
 import { ImportService } from '../../core/data/import.service';
 import { LeagueService } from '../../core/leagues/league.service';
 import { TeamService } from '../../core/leagues/team.service';
-import { countryOptions, leaguesForCountry, countryFlag, CountryOption } from '../../core/leagues/league-catalog';
+import {
+  countryOptions,
+  leaguesForCountry,
+  countryFlag,
+  CountryOption,
+} from '../../core/leagues/league-catalog';
 import { LEAGUES_TO_IMPORT, LeagueImportConfig } from '../../core/data/league-import.config';
 import { Deck } from '../../core/models/deck.model';
 import { League } from '../../core/models/league.model';
@@ -19,7 +25,7 @@ import { TeamBadge } from '../../shared/ui/team-badge';
 
 // comingSoon leagues have no real teams to browse (some don't even have a
 // numeric TheSportsDB id), so Pesquisa excludes them entirely.
-const SEARCHABLE_LEAGUES = LEAGUES_TO_IMPORT.filter(config => !config.comingSoon);
+const SEARCHABLE_LEAGUES = LEAGUES_TO_IMPORT.filter((config) => !config.comingSoon);
 
 @Component({
   selector: 'app-search',
@@ -27,6 +33,7 @@ const SEARCHABLE_LEAGUES = LEAGUES_TO_IMPORT.filter(config => !config.comingSoon
   imports: [RouterLink, HugeiconsIconComponent, LeagueBadge, TeamBadge],
   templateUrl: './search.html',
   styleUrl: './search.scss',
+  host: { 'data-accent': 'orange' },
 })
 export class Search {
   private deckService = inject(DeckService);
@@ -39,7 +46,8 @@ export class Search {
   readonly Search01Icon = Search01Icon;
   readonly ArrowLeft02Icon = ArrowLeft02Icon;
   readonly Exchange01Icon = Exchange01Icon;
-  
+  readonly Cancel01Icon = Cancel01Icon;
+
   readonly query = signal('');
   readonly matchedLeagues = signal<LeagueImportConfig[] | null>(null);
   readonly selectedCountry = signal<string | null>(null);
@@ -72,7 +80,7 @@ export class Search {
   private async refreshCatalog() {
     this.decks.set(await this.deckService.listDecks());
     const entries = await Promise.all(
-      SEARCHABLE_LEAGUES.map(async config => {
+      SEARCHABLE_LEAGUES.map(async (config) => {
         const leagueId = `ts-${config.externalId}`;
         return [leagueId, await this.leagueService.getLeague(leagueId)] as const;
       }),
@@ -85,14 +93,14 @@ export class Search {
     const teamId = this.route.snapshot.queryParamMap.get('team');
     if (!leagueExternalId) return;
 
-    const config = SEARCHABLE_LEAGUES.find(c => c.externalId === leagueExternalId);
+    const config = SEARCHABLE_LEAGUES.find((c) => c.externalId === leagueExternalId);
     if (!config) return;
 
     this.selectedCountry.set(config.country);
     await this.openLeague(config);
 
     if (teamId) {
-      const team = this.leagueTeams().find(t => t.id === teamId);
+      const team = this.leagueTeams().find((t) => t.id === teamId);
       if (team) this.selectedTeam.set(team);
     }
   }
@@ -122,11 +130,16 @@ export class Search {
     }
 
     const matches = await this.teamService.searchByName(trimmed);
-    const matchedTeamIds = new Set(matches.map(team => team.id));
+    // Typing fast fires overlapping searches; drop any response that no
+    // longer corresponds to what's in the box.
+    if (this.query().trim() !== trimmed) return;
+    const matchedTeamIds = new Set(matches.map((team) => team.id));
     const decks = this.decks();
-    const matchedLeagues = SEARCHABLE_LEAGUES.filter(config => {
-      const deck = decks.find(d => d.scope.kind === 'league' && d.scope.leagueId === `ts-${config.externalId}`);
-      return !!deck && deck.teamIds.some(id => matchedTeamIds.has(id));
+    const matchedLeagues = SEARCHABLE_LEAGUES.filter((config) => {
+      const deck = decks.find(
+        (d) => d.scope.kind === 'league' && d.scope.leagueId === `ts-${config.externalId}`,
+      );
+      return !!deck && deck.teamIds.some((id) => matchedTeamIds.has(id));
     });
     this.matchedLeagues.set(matchedLeagues);
   }
@@ -153,11 +166,41 @@ export class Search {
     this.selectedTeam.set(null);
   }
 
+  // Handler for clicking a league card (search results or country list).
+  // Keeps the query — the team grid honors it as a filter — and pins the
+  // country so "Trocar liga" lands on the right list.
+  async selectLeague(config: LeagueImportConfig) {
+    this.selectedCountry.set(config.country);
+    await this.openLeague(config);
+  }
+
+  clearQuery() {
+    this.query.set('');
+    this.matchedLeagues.set(null);
+  }
+
+  // Teams of the open league, narrowed by the query while one is typed.
+  // Same fields TeamService.searchByName matches on, so the teams shown
+  // are consistent with the leagues the search surfaced.
+  filteredLeagueTeams(): Team[] {
+    const needle = this.query().trim().toLowerCase();
+    const teams = this.leagueTeams();
+    if (!needle) return teams;
+    return teams.filter(
+      (team) =>
+        team.name.toLowerCase().includes(needle) ||
+        team.shortName?.toLowerCase().includes(needle) ||
+        team.alternateNames.some((name) => name.toLowerCase().includes(needle)),
+    );
+  }
+
   async openLeague(config: LeagueImportConfig) {
     this.selectedLeagueConfig.set(config);
-    const deck = this.decks().find(d => d.scope.kind === 'league' && d.scope.leagueId === `ts-${config.externalId}`);
+    const deck = this.decks().find(
+      (d) => d.scope.kind === 'league' && d.scope.leagueId === `ts-${config.externalId}`,
+    );
     const teamIds = deck?.teamIds ?? [];
-    const teams = await Promise.all(teamIds.map(id => this.teamService.getTeam(id)));
+    const teams = await Promise.all(teamIds.map((id) => this.teamService.getTeam(id)));
     this.leagueTeams.set(teams.filter((team): team is Team => !!team));
   }
 
@@ -177,7 +220,7 @@ export class Search {
 
   leagueNamesFor(team: Team): string[] {
     return team.leagueIds
-      .map(id => SEARCHABLE_LEAGUES.find(c => `ts-${c.externalId}` === id)?.name)
+      .map((id) => SEARCHABLE_LEAGUES.find((c) => `ts-${c.externalId}` === id)?.name)
       .filter((name): name is string => !!name);
   }
 }

@@ -26,7 +26,7 @@ class FakeImage {
 describe('AppInitService', () => {
   const originalImage = globalThis.Image;
   let service: AppInitService;
-  let importServiceSpy: { importLeagues: ReturnType<typeof vi.fn> };
+  let importServiceSpy: { importLeagues: ReturnType<typeof vi.fn>; markDataChecked: ReturnType<typeof vi.fn> };
   let deckServiceSpy: { getDeck: ReturnType<typeof vi.fn> };
   let leagueServiceSpy: { getLeague: ReturnType<typeof vi.fn>; listLeagues: ReturnType<typeof vi.fn> };
   let dbSpy: { teams: { toArray: ReturnType<typeof vi.fn> } };
@@ -52,7 +52,7 @@ describe('AppInitService', () => {
     FakeImage.requestedUrls = [];
     (globalThis as unknown as { Image: typeof Image }).Image = FakeImage as unknown as typeof Image;
 
-    importServiceSpy = { importLeagues: vi.fn().mockResolvedValue(undefined) };
+    importServiceSpy = { importLeagues: vi.fn().mockResolvedValue(undefined), markDataChecked: vi.fn() };
     deckServiceSpy = { getDeck: vi.fn() };
     leagueServiceSpy = { getLeague: vi.fn(), listLeagues: vi.fn().mockResolvedValue([]) };
     dbSpy = { teams: { toArray: vi.fn().mockResolvedValue([]) } };

@@ -1,15 +1,15 @@
 .theme-options {
   display: flex;
-  flex-direction: column;
   gap: 0.6rem;
 }
 
 .theme-option {
+  flex: 1;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  padding: 0.9rem 1rem;
-  text-align: left;
+  padding: 0.9rem 0.5rem;
+  text-align: center;
   font-weight: 700;
   font-size: 0.9rem;
   color: var(--text);
@@ -24,41 +24,100 @@
 }
 
 .theme-option--active {
-  border-color: var(--green);
-  background: var(--green-dim);
-  color: var(--green);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
 .settings-section {
   margin-top: 1.25rem;
 }
 
+.data-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
 .danger-action,
 .secondary-action {
+  flex: 1;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.55rem;
   background: var(--surface);
   border-radius: var(--radius-md);
-  padding: 0.85rem 1rem;
+  padding: 0.85rem 0.75rem;
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
 }
 
 .danger-action {
-  border: 1px solid var(--danger);
-  color: var(--danger);
+  border: 1px solid var(--red);
+  color: var(--red-text);
 }
 
 .secondary-action {
   border: 1px solid var(--border);
   color: var(--text);
-  margin-bottom: 0.75rem;
 
   &:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+}
+
+.data-summary {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.data-summary__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.data-summary__value {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.data-summary__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.data-summary__meta {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  dt {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 }
 

@@ -24,9 +24,9 @@ describe('Settings', () => {
     );
     expect(options.length).toBe(3);
     expect(Array.from(options).map(option => option.textContent?.trim())).toEqual([
-      'Escuro',
       'Claro',
-      'Automático',
+      'Escuro',
+      'Auto',
     ]);
   });
 

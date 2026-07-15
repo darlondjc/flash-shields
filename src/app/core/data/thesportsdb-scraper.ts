@@ -17,6 +17,16 @@ export interface TheSportsDbTeam {
   strBadge: string | null;
   intFormedYear: string | null;
   idLeague: string | null;
+  // Competições secundárias do time (copas nacionais/continentais): um clube
+  // da Libertadores tem o campeonato nacional como idLeague e a copa em um
+  // dos idLeague2..7.
+  idLeague2?: string | null;
+  idLeague3?: string | null;
+  idLeague4?: string | null;
+  idLeague5?: string | null;
+  idLeague6?: string | null;
+  idLeague7?: string | null;
+  strSport?: string | null;
   strStadium: string | null;
   strWebsite: string | null;
 }
@@ -103,22 +113,55 @@ export async function discoverTeamNames(get: ThesportsdbGet, externalLeagueId: s
 
 export async function fetchTeamByName(get: ThesportsdbGet, name: string, externalLeagueId: string): Promise<ImportedTeam | null> {
   const response = await get<TheSportsDbTeamsResponse>('searchteams.php', { t: name });
-  const candidates = response.teams ?? [];
+  // A busca é por nome em toda a base, então colide com outros esportes:
+  // 'Jordan' retorna a equipe extinta de F1, 'Georgia' um time universitário
+  // de futebol americano. Sem strSport na resposta (não deveria acontecer),
+  // dá o benefício da dúvida em vez de descartar.
+  const candidates = (response.teams ?? []).filter(team => team.strSport == null || team.strSport === 'Soccer');
   // Nomes de time podem colidir entre países (ex.: "América" existe no
-  // Brasil e no México), então prioriza o resultado cujo idLeague bate com
-  // a liga que estamos importando; sem isso, usa o primeiro resultado.
-  const match = candidates.find(team => team.idLeague === externalLeagueId) ?? candidates[0];
+  // Brasil e no México), então prioriza o resultado que disputa a liga que
+  // estamos importando — olhando também as competições secundárias
+  // (idLeague2..7), porque um clube de copa continental/nacional tem o
+  // campeonato doméstico como liga primária. Sem match, usa o primeiro.
+  const match = candidates.find(team => teamPlaysInLeague(team, externalLeagueId)) ?? candidates[0];
   return match ? mapTeam(match) : null;
 }
 
-export async function fetchTeamsForLeague(get: ThesportsdbGet, externalLeagueId: string, season: string): Promise<ImportedTeam[]> {
-  const teamNames = await discoverTeamNames(get, externalLeagueId, season);
+function teamPlaysInLeague(team: TheSportsDbTeam, externalLeagueId: string): boolean {
+  return [team.idLeague, team.idLeague2, team.idLeague3, team.idLeague4, team.idLeague5, team.idLeague6, team.idLeague7]
+    .includes(externalLeagueId);
+}
+
+// Válvula de escape pros buracos do índice do searchteams.php: alguns times
+// não são encontráveis por nenhuma grafia do próprio nome (ex.: 'St. Louis
+// City SC' retorna o Louisville City, 'San Lorenzo' só acha o time de
+// basquete do clube). Entradas 'id:<idTeam>' em teamNames resolvem direto
+// por lookupteam.php.
+export async function fetchTeamById(get: ThesportsdbGet, idTeam: string): Promise<ImportedTeam | null> {
+  const response = await get<TheSportsDbTeamsResponse>('lookupteam.php', { id: idTeam });
+  const team = response.teams?.[0];
+  return team ? mapTeam(team) : null;
+}
+
+// knownTeamNames pula a descoberta por rodadas: torneios de seleções têm
+// elenco fixo por edição (ver teamNames em league-import.config.ts), e a
+// varredura de eventsround — pensada pra ligas de clubes com dezenas de
+// rodadas — não cobre o elenco inteiro de um torneio curto na chave gratuita.
+export async function fetchTeamsForLeague(
+  get: ThesportsdbGet,
+  externalLeagueId: string,
+  season: string,
+  knownTeamNames?: string[],
+): Promise<ImportedTeam[]> {
+  const teamNames = knownTeamNames ?? (await discoverTeamNames(get, externalLeagueId, season));
   const teams: ImportedTeam[] = [];
   // Sequencial, não Promise.all: disparar todas as buscas de time em
   // paralelo ignoraria o espaçamento entre chamadas e estouraria o limite
   // de qualquer forma.
   for (const name of teamNames) {
-    const team = await fetchTeamByName(get, name, externalLeagueId);
+    const team = name.startsWith('id:')
+      ? await fetchTeamById(get, name.slice(3))
+      : await fetchTeamByName(get, name, externalLeagueId);
     if (team) teams.push(team);
   }
   return teams;

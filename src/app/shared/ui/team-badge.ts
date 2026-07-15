@@ -93,8 +93,12 @@ export class TeamBadge {
   readonly team = input.required<Team>();
   // Regions (in % of the image) to blur over the crest artwork — only
   // relevant to consumers that don't want a name baked into the badge to
-  // give away the answer (e.g. Estudo). Left empty, nothing is drawn.
+  // give away the answer (e.g. Jogos). Left empty, nothing is drawn.
   readonly textRegions = input<CrestTextBox[]>([]);
+  // 'question' usa badgeQuestionUrl (escudo sem o nome do time) quando o time
+  // tem um; caso contrário cai no escudo normal. Cada variante tem sua própria
+  // entrada no cache de blobs.
+  readonly variant = input<'answer' | 'question'>('answer');
   // Emitted once loading has failed MAX_LOAD_ATTEMPTS times in a row — lets a
   // consumer (e.g. the game grid) swap in a different team rather than leave
   // a permanently broken badge on screen.
@@ -109,16 +113,23 @@ export class TeamBadge {
   private attempts = 0;
   private requestId = 0;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
+  // URL/chave resolvidos pela variante ativa; usados também pelos retries de
+  // handleError, que precisam recarregar exatamente o que o effect escolheu.
+  private sourceUrl = '';
+  private cacheKey = '';
 
   constructor() {
     effect(onCleanup => {
       const currentTeam = this.team();
+      const useQuestion = this.variant() === 'question' && !!currentTeam.badgeQuestionUrl;
+      this.sourceUrl = useQuestion ? currentTeam.badgeQuestionUrl! : currentTeam.badgeUrl;
+      this.cacheKey = useQuestion ? `${currentTeam.id}:question` : currentTeam.id;
       this.revokeCurrentUrl();
       this.imageUrl.set(null);
       this.failed.set(false);
       this.attempts = 0;
       const requestId = ++this.requestId;
-      this.load(currentTeam, requestId);
+      this.load(requestId);
 
       onCleanup(() => {
         // Bump requestId so any in-flight fetch or pending retry for the
@@ -143,17 +154,16 @@ export class TeamBadge {
       return;
     }
 
-    const team = this.team();
     const requestId = this.requestId;
     this.retryTimer = setTimeout(() => {
       this.retryTimer = null;
-      this.load(team, requestId, true);
+      this.load(requestId, true);
     }, RETRY_DELAY_MS);
   }
 
-  private load(team: Team, requestId: number, forceRefresh = false) {
+  private load(requestId: number, forceRefresh = false) {
     this.attempts++;
-    this.badgeCache.getObjectUrl(team.id, team.badgeUrl, forceRefresh).then(url => {
+    this.badgeCache.getObjectUrl(this.cacheKey, this.sourceUrl, forceRefresh).then(url => {
       if (requestId !== this.requestId) {
         URL.revokeObjectURL(url);
         return;

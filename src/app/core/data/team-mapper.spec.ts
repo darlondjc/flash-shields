@@ -19,4 +19,34 @@ describe('mapImportedTeamToTeam', () => {
     expect(team.name).toBe('Arsenal');
     expect(team.badgeUrl).toBe('https://example.com/arsenal.png');
   });
+
+  it('translates national team names to Portuguese in national-team leagues, keeping the original as alternate', () => {
+    const imported: ImportedTeam = {
+      externalId: '133907',
+      name: 'Germany',
+      alternateNames: ['Deutschland'],
+      country: 'Germany',
+      badgeUrl: '',
+    };
+
+    const team = mapImportedTeamToTeam(imported, 'ts-4429');
+
+    expect(team.name).toBe('Alemanha');
+    expect(team.alternateNames).toContain('Germany');
+    expect(team.alternateNames).toContain('Deutschland');
+  });
+
+  it('does not translate club names outside national-team leagues', () => {
+    const imported: ImportedTeam = {
+      externalId: '1',
+      name: 'Brazil',
+      alternateNames: [],
+      country: 'Brazil',
+      badgeUrl: '',
+    };
+
+    const team = mapImportedTeamToTeam(imported, 'ts-4328');
+
+    expect(team.name).toBe('Brazil');
+  });
 });

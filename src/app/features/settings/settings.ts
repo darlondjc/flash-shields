@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import Home01Icon from '@hugeicons/core-free-icons/Home01Icon';
@@ -15,10 +16,16 @@ interface ThemeOption {
   label: string;
 }
 
+interface DataStats {
+  countries: number;
+  leagues: number;
+  teams: number;
+}
+
 @Component({
   selector: 'app-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, HugeiconsIconComponent],
+  imports: [RouterLink, HugeiconsIconComponent, DatePipe],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',
 })
@@ -33,18 +40,20 @@ export class Settings {
   readonly RefreshIcon = RefreshIcon;
 
   readonly themeOptions: ThemeOption[] = [
-    { value: 'dark', label: 'Escuro' },
     { value: 'light', label: 'Claro' },
-    { value: 'auto', label: 'Automático' },
+    { value: 'dark', label: 'Escuro' },
+    { value: 'auto', label: 'Auto' },
   ];
 
   readonly hasImportedLeagues = signal(false);
+  readonly dataStats = signal<DataStats | null>(null);
 
   constructor() {
     void this.checkImportedLeagues();
     // ImportService.progress changes on every league import tick (including
     // background boot-time imports), so this also catches the moment the
-    // first league lands and the refresh button should appear.
+    // first league lands and the refresh button should appear — and keeps
+    // the data summary card counting up while an import runs.
     effect(() => {
       this.importService.progress();
       void this.checkImportedLeagues();
@@ -54,6 +63,13 @@ export class Settings {
   private async checkImportedLeagues() {
     const leagues = await this.leagueService.listLeagues();
     this.hasImportedLeagues.set(leagues.length > 0);
+
+    const teams = await this.db.teams.count();
+    this.dataStats.set({
+      countries: new Set(leagues.map(league => league.country)).size,
+      leagues: leagues.length,
+      teams,
+    });
   }
 
   selectTheme(preference: ThemePreference) {
