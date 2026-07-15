@@ -28,6 +28,7 @@ describe('Game', () => {
     next: ReturnType<typeof vi.fn>;
     mode: ReturnType<typeof signal<'multiple-choice' | 'reverse'>>;
     current: ReturnType<typeof signal<MultipleChoiceQuestion | ReverseQuestion | null>>;
+    questions: ReturnType<typeof signal<(MultipleChoiceQuestion | ReverseQuestion)[]>>;
     finished: ReturnType<typeof signal<boolean>>;
     score: ReturnType<typeof signal<number>>;
     streak: ReturnType<typeof signal<number>>;
@@ -46,6 +47,7 @@ describe('Game', () => {
       next: vi.fn(),
       mode: signal('multiple-choice'),
       current: signal({ correctTeam, options }),
+      questions: signal([{ correctTeam, options }]),
       finished: signal(false),
       score: signal(0),
       streak: signal(0),

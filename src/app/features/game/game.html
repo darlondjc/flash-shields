@@ -46,6 +46,7 @@
             <app-team-badge
               [team]="question.correctTeam"
               [textRegions]="textRegionsFor(question.correctTeam.id)"
+              [maskPending]="!crestReadyFor(question.correctTeam.id)"
               (loadFailed)="onBadgeLoadFailed(question, question.correctTeam.id)"
             />
           }
@@ -68,6 +69,7 @@
                 <app-team-badge
                   [team]="option"
                   [textRegions]="textRegionsFor(option.id)"
+                  [maskPending]="!crestReadyFor(option.id)"
                   (loadFailed)="onBadgeLoadFailed(question, option.id)"
                 />
               </button>

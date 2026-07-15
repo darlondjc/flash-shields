@@ -10,6 +10,7 @@ import { GameMode } from '../../core/models/session.model';
 import { DeckService } from '../../core/decks/deck.service';
 import { GameStore } from './game.store';
 import { Question } from './game.util';
+import { Team } from '../../core/models/team.model';
 import { TeamBadge } from '../../shared/ui/team-badge';
 import { CrestTextRegionService } from '../../core/persistence/crest-text-region.service';
 import { CrestTextBox } from '../../core/models/crest-text-box.model';
@@ -67,16 +68,19 @@ export class Game {
     });
 
     effect(() => {
-      const question = this.store.current();
-      if (!question) return;
-
-      // Every badge that's actually visible needs its name masked: just the
-      // prompt in multiple-choice mode (the answer is picked from text
-      // options), but every option's shield in reverse mode — an unmasked
-      // name baked into any of those crests would let the user read the
-      // answer off the artwork instead of recognizing the shield.
-      const teams = this.store.mode() === 'reverse' ? question.options : [question.correctTeam];
-      for (const team of teams) {
+      // Kick off detection for every badge in the whole round as soon as
+      // it's loaded, not just the current question's — OCR takes a couple
+      // of seconds per crest, so waiting until a question is on screen to
+      // start it would flash the un-masked name for however long that
+      // takes. Whether a badge is visible before its detection finishes is
+      // still handled by textRegionsFor()/crestReadyFor() gating the image.
+      const questions = this.store.questions();
+      const teams = new Map<string, Team>();
+      for (const question of questions) {
+        teams.set(question.correctTeam.id, question.correctTeam);
+        for (const option of question.options) teams.set(option.id, option);
+      }
+      for (const team of teams.values()) {
         if (untracked(() => this.textRegionsByTeamId().has(team.id))) continue;
         this.crestTextRegions.getRegions(team).then(boxes => {
           this.textRegionsByTeamId.update(map => new Map(map).set(team.id, boxes));
@@ -89,6 +93,14 @@ export class Game {
 
   textRegionsFor(teamId: string): CrestTextBox[] {
     return this.textRegionsByTeamId().get(teamId) ?? [];
+  }
+
+  // A team's crest must stay hidden until we know whether it needs masking —
+  // an empty result and "not checked yet" both read as "no boxes to draw",
+  // so without this the badge would render un-masked for however long OCR
+  // takes on a never-before-seen team.
+  crestReadyFor(teamId: string): boolean {
+    return this.textRegionsByTeamId().has(teamId);
   }
 
   private clearAutoAdvance() {

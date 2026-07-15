@@ -14,15 +14,19 @@ const RETRY_DELAY_MS = 600;
       @if (failed()) {
         <div class="team-badge team-badge--failed" [attr.aria-label]="team().name" role="img"></div>
       } @else if (imageUrl(); as url) {
-        <img [src]="url" [alt]="team().name" class="team-badge" (error)="handleError()" />
-        @for (box of textRegions(); track $index) {
-          <div
-            class="crest-text-mask"
-            [style.top.%]="box.top"
-            [style.left.%]="box.left"
-            [style.width.%]="box.width"
-            [style.height.%]="box.height"
-          ></div>
+        @if (maskPending()) {
+          <div class="team-badge team-badge--loading" [attr.aria-label]="team().name"></div>
+        } @else {
+          <img [src]="url" [alt]="team().name" class="team-badge" (error)="handleError()" />
+          @for (box of textRegions(); track $index) {
+            <div
+              class="crest-text-mask"
+              [style.top.%]="box.top"
+              [style.left.%]="box.left"
+              [style.width.%]="box.width"
+              [style.height.%]="box.height"
+            ></div>
+          }
         }
       } @else {
         <div class="team-badge team-badge--loading" [attr.aria-label]="team().name"></div>
@@ -95,6 +99,11 @@ export class TeamBadge {
   // relevant to consumers that don't want a name baked into the badge to
   // give away the answer (e.g. Jogos). Left empty, nothing is drawn.
   readonly textRegions = input<CrestTextBox[]>([]);
+  // While true, the crest itself is held back behind the loading shimmer
+  // even once the image bytes are ready — used by consumers who compute
+  // textRegions asynchronously (OCR) so the un-masked name is never shown
+  // for the second or two detection takes on a never-before-seen team.
+  readonly maskPending = input(false);
   // 'question' usa badgeQuestionUrl (escudo sem o nome do time) quando o time
   // tem um; caso contrário cai no escudo normal. Cada variante tem sua própria
   // entrada no cache de blobs.
