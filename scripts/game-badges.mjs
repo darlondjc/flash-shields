@@ -130,7 +130,6 @@ async function downloadBadge(url) {
 // badgeGameUrl field, so this can run unattended on a schedule without a
 // human approving anything mid-run.
 async function generate(flags) {
-  requireEnv('BLOB_READ_WRITE_TOKEN');
   const { put } = await import('@vercel/blob');
   const db = await getDb();
 
@@ -234,7 +233,6 @@ async function review(flags) {
 // ---------------------------------------------------------------- publish
 
 async function publish(flags) {
-  requireEnv('BLOB_READ_WRITE_TOKEN');
   const { put } = await import('@vercel/blob');
   const db = await getDb();
   const manifest = loadManifest();

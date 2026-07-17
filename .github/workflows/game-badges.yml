@@ -30,24 +30,23 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r scripts/requirements.txt
 
-      # Vercel Blob signed tokens max out at 7 days, so there's no long-lived
-      # BLOB_READ_WRITE_TOKEN to store as a secret — mint a fresh one at the
-      # start of every run instead, scoped to just this run's lifetime, using
-      # a long-lived Vercel account token (VERCEL_TOKEN) to authenticate.
-      - name: Mint a short-lived Vercel Blob token
+      # There's no long-lived BLOB_READ_WRITE_TOKEN to store as a secret, so
+      # authenticate via OIDC instead: OIDC federation is enabled for the
+      # "production" environment (not "development"), so pulling production
+      # env vars here gives us a short-lived VERCEL_OIDC_TOKEN + BLOB_STORE_ID
+      # into .env.production.local — game-badges.mjs's loadEnv() picks those
+      # up automatically, and @vercel/blob's put() authenticates via OIDC
+      # whenever no explicit token is passed. (An earlier version of this
+      # step minted a signed Blob token via `vercel blob signed-token`, but
+      # newer CLI versions changed that command's output to a
+      # delegationToken/clientSigningToken pair meant for presigned client
+      # uploads — not a drop-in BLOB_READ_WRITE_TOKEN — so it stopped working.)
+      - name: Pull Vercel Blob OIDC credentials
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: |
-          TOKEN_JSON=$(npx --yes vercel@latest blob signed-token \
-            --pathname "*" --operation put --operation get \
-            --valid-for 1d --json --token="$VERCEL_TOKEN")
-          echo "::add-mask::$(node -pe 'JSON.parse(process.argv[1]).token' "$TOKEN_JSON")"
-          node -e '
-            const token = JSON.parse(process.argv[1]).token;
-            require("node:fs").appendFileSync(process.env.GITHUB_ENV, `BLOB_READ_WRITE_TOKEN=${token}\n`);
-          ' "$TOKEN_JSON"
+        run: npx --yes vercel@latest env pull .env.production.local --environment=production --token="$VERCEL_TOKEN"
 
       - name: Generate game badge candidates
         env:
