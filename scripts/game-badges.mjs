@@ -1,28 +1,31 @@
-// Gera variantes "jogo" dos escudos (nome do time borrado, não removido —
-// ver por quê no comentário de EDIT abaixo), pros modos Múltipla escolha e
-// Reverso não entregarem a resposta.
+// Gera variantes "jogo" dos escudos (nome do time removido e reconstruído
+// via inpainting, não só borrado), pros modos Múltipla escolha e Reverso
+// não entregarem a resposta.
 //
 // Diferente de question-badges.mjs (que reescreve o escudo inteiro via
-// Gemini), aqui a detecção do texto é feita pelo PaddleOCR — mais confiável
-// pra nomes em curva/estilizados, mas exige Python (não roda no navegador).
-// Por isso o fluxo é partido em duas metades:
+// Gemini), aqui a detecção do texto é feita pelo EasyOCR/CRAFT (scripts/
+// remove_text.py) — pega texto em curva/arqueado que o PaddleOCR (versão
+// anterior deste pipeline) simplesmente não enxergava, mas exige Python
+// (não roda no navegador). Por isso o fluxo é partido em duas metades:
 //
 //   generate  → roda em CI (GitHub Actions, agendado) sobre QUALQUER time
 //               com escudo novo/alterado. Só grava um campo "candidato",
 //               nunca publica direto.
 //   review    → roda local: baixa os candidatos novos, gera uma galeria HTML
-//               comparando original x borrado (game-badge-review/review.html).
+//               comparando original x removido (game-badge-review/review.html).
 //               Apague o game.png dos que ficaram ruins.
 //   publish   → roda local: promove os candidatos aprovados (que sobraram
 //               com game.png) pro campo real badgeGameUrl.
 //   status    → resumo do andamento.
 //
 // Todos os passos são idempotentes e re-executáveis. Flags: --limit N,
-// --only <teamId>, --force (reprocessa mesmo quem já está em dia).
+// --only <teamId1,teamId2,...>, --force (reprocessa mesmo quem já está em dia).
 //
 // Env (lidas de .env.local / .env.production.local / ambiente):
-//   FIREBASE_*              todos os passos (mesmas vars do api/)
-//   BLOB_READ_WRITE_TOKEN   generate + publish
+//   FIREBASE_*                        todos os passos (mesmas vars do api/)
+//   VERCEL_OIDC_TOKEN + BLOB_STORE_ID  generate + publish (autenticação no
+//                                      Blob; BLOB_READ_WRITE_TOKEN funciona
+//                                      como alternativa se preenchido)
 //
 // O estado local fica em game-badge-review/ (fora do git, adicionar ao
 // .gitignore junto com badge-review/): manifest.json + original.png/game.png
@@ -38,7 +41,7 @@ import { tmpdir } from 'node:os';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const REVIEW_DIR = join(ROOT, 'game-badge-review');
 const MANIFEST_PATH = join(REVIEW_DIR, 'manifest.json');
-const DETECT_SCRIPT = join(ROOT, 'scripts', 'paddle_detect_blur.py');
+const DETECT_SCRIPT = join(ROOT, 'scripts', 'remove_text.py');
 const PYTHON_BIN = process.env.PYTHON_BIN ?? 'python3';
 
 // ---------------------------------------------------------------- env / setup
@@ -125,10 +128,10 @@ async function downloadBadge(url) {
 // ---------------------------------------------------------------- generate
 
 // Runs in CI. For every team whose current badgeUrl hasn't been through
-// PaddleOCR yet (or changed since it last was), detect+blur via the Python
-// subprocess and stash the result as a *candidate* — never touches the real
-// badgeGameUrl field, so this can run unattended on a schedule without a
-// human approving anything mid-run.
+// text removal yet (or changed since it last was), detect+inpaint via the
+// Python subprocess and stash the result as a *candidate* — never touches
+// the real badgeGameUrl field, so this can run unattended on a schedule
+// without a human approving anything mid-run.
 async function generate(flags) {
   const { put } = await import('@vercel/blob');
   const db = await getDb();
@@ -140,7 +143,7 @@ async function generate(flags) {
     teams = teams.filter(team => team.badgeGameCandidateSourceUrl !== team.badgeUrl);
   }
   teams = teams.slice(0, flags.limit === Infinity ? teams.length : flags.limit);
-  console.log(`Processando ${teams.length} escudos com PaddleOCR...`);
+  console.log(`Processando ${teams.length} escudos com EasyOCR...`);
 
   let withText = 0;
   let clean = 0;
@@ -152,7 +155,7 @@ async function generate(flags) {
       const outputPath = join(tmpdir(), `game-badge-out-${team.id}.png`);
       writeFileSync(inputPath, badge);
 
-      const raw = execFileSync(PYTHON_BIN, [DETECT_SCRIPT, inputPath, outputPath], { encoding: 'utf8' });
+      const raw = execFileSync(PYTHON_BIN, [DETECT_SCRIPT, inputPath, '-o', outputPath], { encoding: 'utf8' });
       const { regionsFound } = JSON.parse(raw.trim().split('\n').pop());
 
       if (regionsFound === 0) {
@@ -177,12 +180,12 @@ async function generate(flags) {
         { badgeGameCandidateSourceUrl: team.badgeUrl, badgeGameCandidateUrl: blob.url },
         { merge: true },
       );
-      console.log(`${label}: ${regionsFound} região(ões) borrada(s) → ${blob.url}`);
+      console.log(`${label}: ${regionsFound} região(ões) removida(s) → ${blob.url}`);
     } catch (err) {
       console.error(`${label}: ERRO ${err.message}`);
     }
   }
-  console.log(`\nConcluído: ${withText} com texto borrado, ${clean} sem texto detectado.`);
+  console.log(`\nConcluído: ${withText} com texto removido, ${clean} sem texto detectado.`);
   console.log('Próximo passo (local): node scripts/game-badges.mjs review');
 }
 
@@ -295,7 +298,7 @@ function writeGallery(manifest) {
       return `<figure>
         <div class="pair">
           <img src="${id}/original.png" alt="original">
-          ${hasGame ? `<img src="${id}/game.png" alt="borrado">` : '<div class="missing">rejeitado</div>'}
+          ${hasGame ? `<img src="${id}/game.png" alt="removido">` : '<div class="missing">rejeitado</div>'}
         </div>
         <figcaption><strong>${entry.name}</strong><br><code>${id}</code>${entry.publishedAt ? ' · <b>publicado</b>' : ''}</figcaption>
       </figure>`;
@@ -311,7 +314,7 @@ function writeGallery(manifest) {
   .missing { display: grid; place-items: center; color: #999; font-size: 0.8rem; }
   figcaption { font-size: 0.8rem; margin-top: 0.5rem; }
 </style>
-<p>Esquerda: original · Direita: nome borrado pelo PaddleOCR. Pra rejeitar, apague o <code>game.png</code> da pasta do time e rode <code>publish</code>.</p>
+<p>Esquerda: original · Direita: nome removido/reconstruído (EasyOCR + inpainting). Pra rejeitar, apague o <code>game.png</code> da pasta do time e rode <code>publish</code>.</p>
 <main>${rows}</main>`;
   writeFileSync(join(REVIEW_DIR, 'review.html'), html);
 }

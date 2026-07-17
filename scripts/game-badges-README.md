@@ -1,14 +1,15 @@
-# Pipeline de escudos "jogo" (PaddleOCR)
+# Pipeline de escudos "jogo" (EasyOCR + inpainting)
 
-Gera uma variante de cada escudo com o nome do time borrado, especificamente
-pros modos Múltipla escolha e Reverso (`Team.badgeGameUrl`). Não confundir com
-`scripts/question-badges.mjs`, que gera `badgeQuestionUrl` pra Study
-reescrevendo o escudo inteiro via Gemini — pipeline separado, motivo no
-cabeçalho de `game-badges.mjs`.
+Gera uma variante de cada escudo com o nome do time removido e reconstruído,
+especificamente pros modos Múltipla escolha e Reverso (`Team.badgeGameUrl`).
+Não confundir com `scripts/question-badges.mjs`, que gera `badgeQuestionUrl`
+pra Study reescrevendo o escudo inteiro via Gemini — pipeline separado, ver
+"Por que EasyOCR" abaixo.
 
 Arquivos:
-- `scripts/paddle_detect_blur.py` — detecção (PaddleOCR) + blur (Pillow), roda
-  como subprocesso. Só image-in, image-out.
+- `scripts/remove_text.py` — detecção (EasyOCR/CRAFT) + remoção com
+  reconstrução do fundo (inpainting via LaMa, com fallback pro OpenCV
+  clássico), roda como subprocesso. Só image-in, image-out.
 - `scripts/game-badges.mjs` — orquestra Firestore + Vercel Blob, chama o
   Python. Comandos: `generate` (CI), `review`/`publish`/`status` (local).
 - `.github/workflows/game-badges.yml` — roda `generate` semanalmente.
@@ -21,52 +22,33 @@ python3 -m venv .venv
 .venv/bin/pip install -r scripts/requirements.txt
 ```
 
-Python 3.12+ não vem com `setuptools` no venv por padrão — sem isso o import
-do `paddle` quebra com `ModuleNotFoundError: No module named 'setuptools'`
-(já está listado em `scripts/requirements.txt`, mas o `pip install --upgrade
-pip` sozinho não resolve, precisa instalar `setuptools` explicitamente antes
-ou junto).
+Instala EasyOCR (detecção), OpenCV/numpy e `simple-lama-inpainting`
+(reconstrução do fundo via rede neural). Traz PyTorch como dependência —
+instalação bem mais pesada que o antigo PaddleOCR (a wheel padrão do PyPI já
+vem com suporte a CUDA embutido, ~2GB somados, mesmo rodando só em CPU no
+CI). Se isso virar problema de tempo/espaço em CI, dá pra apontar o pip pro
+índice CPU-only do PyTorch (`--extra-index-url
+https://download.pytorch.org/whl/cpu`).
 
-Teste que a instalação funcionou (baixa os modelos do PaddleOCR na primeira
-vez, ~50-100MB, hospedados em `paddleocr.bj.bcebos.com` — um CDN chinês; se
-sua rede bloquear esse host o download trava/tenta pra sempre sem erro
-claro, é a causa mais provável de qualquer travamento aqui):
+Teste que a instalação funcionou (baixa os modelos do EasyOCR/CRAFT na
+primeira vez, ~65MB, hospedados em releases do GitHub — diferente do
+PaddleOCR, que dependia de um CDN chinês (`paddleocr.bj.bcebos.com`) que
+travava nessa rede sem erro claro; esse problema não deve mais acontecer):
 
 ```bash
-.venv/bin/python -c "from paddleocr import PaddleOCR; PaddleOCR(use_angle_cls=True, lang='en')"
+.venv/bin/python -c "from remove_text import get_reader; get_reader()" 2>&1 | tail -5
 ```
+(rode a partir de `scripts/`, ou ajuste o `sys.path`)
 
 `.env.local` precisa de `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`,
-`FIREBASE_PRIVATE_KEY` (mesmas do `api/`, pegue com `vercel env pull
-.env.local` se tiver o projeto linkado) e `BLOB_READ_WRITE_TOKEN` — ver seção
-seguinte, esse token não é permanente.
-
-## Token do Vercel Blob (expira em no máximo 7 dias)
-
-Esse projeto usa autenticação OIDC no Blob, não existe mais um
-`BLOB_READ_WRITE_TOKEN` fixo salvo nas env vars da Vercel. Pra rodar
-`review`/`publish` localmente, gere um token novo antes de cada sessão:
-
-```bash
-vercel blob signed-token --pathname "*" --operation put --operation get --valid-for 7d --json
-```
-
-Copie o campo `"token"` do JSON de saída pro `.env.local` como
-`BLOB_READ_WRITE_TOKEN=...` (NUNCA imprima esse token em logs/conversas —
-é uma credencial de escrita, mesmo que de curta duração).
-
-Detalhes que travaram na primeira tentativa, caso reapareçam:
-- `--pathname` não aceita glob (`badges/teams/*` falha) — só path exato ou
-  `"*"` (a loja inteira). Como a loja só tem escudos deste projeto, `"*"` é
-  aceitável.
-- Rodar `vercel blob signed-token` localmente sempre usa o contexto
-  "development" da CLI, e o OIDC desse projeto só está habilitado pra
-  "preview"/"production" — por isso o comando acima funciona (ele NÃO
-  depende de OIDC quando `VERCEL_OIDC_TOKEN`/`BLOB_STORE_ID` estão *unset*;
-  só exporte essas duas vars se for reproduzir o erro "OIDC is enabled... but
-  not for development", o que não deve ser necessário no fluxo normal).
-- `vercel blob list-stores` dá o `BLOB_STORE_ID` completo sem precisar puxar
-  env de produção, caso precise dele por algum motivo.
+`FIREBASE_PRIVATE_KEY` (mesmas do `api/`) e, pra autenticar no Vercel Blob,
+`VERCEL_OIDC_TOKEN` + `BLOB_STORE_ID` (rode `vercel env pull .env.local` com
+o projeto linkado — a federação OIDC já está habilitada pro ambiente
+Development deste projeto, então isso funciona sem precisar de um token
+fixo). Se o OIDC não estiver disponível por algum motivo, `BLOB_READ_WRITE_TOKEN`
+gerado via `vercel blob signed-token` continua funcionando como alternativa
+(ver comentário em `game-badges.mjs` → `getDb`/`put` sobre a ordem de
+prioridade das credenciais).
 
 ## GitHub Actions (geração automática dos candidatos)
 
@@ -74,18 +56,25 @@ Repo: `darlondjc/flash-shields` → Settings → Secrets and variables → Actio
 Adicionar:
 
 - `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` —
-  mesmos valores do `.env.local`.
+  mesmos valores do `.env.local`. Precisam ser secrets do GitHub (não dá pra
+  usar os valores da Vercel diretamente: essas três variáveis estão
+  marcadas "Sensitive" no dashboard da Vercel, e valores Sensitive nunca são
+  legíveis via `vercel env pull`/CLI — só ficam disponíveis dentro do
+  runtime da própria Vercel).
 - `VERCEL_TOKEN` — token de conta de longa duração, criar em
-  vercel.com/account/tokens. O workflow usa ele pra mintar um
-  `BLOB_READ_WRITE_TOKEN` de 1 dia a cada execução (não dá pra guardar um
-  token de Blob fixo como secret, o máximo são 7 dias).
+  vercel.com/account/tokens. O workflow usa ele pra puxar `VERCEL_OIDC_TOKEN`
+  + `BLOB_STORE_ID` frescos a cada execução (via `vercel env pull
+  --environment=production`), que autenticam no Vercel Blob sem precisar de
+  um token fixo.
 - `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` — não são secretos (estão em
   `.vercel/project.json`), mas guarde como secret mesmo assim por
   simplicidade.
 
 O workflow roda toda segunda-feira 09:00 UTC (três horas depois do sync
 semanal da Vercel, `vercel.json`), ou manualmente via aba Actions → "Generate
-game badge candidates" → Run workflow.
+game badge candidates" → Run workflow (aceita os inputs opcionais `only`
+— IDs de time separados por vírgula — e `force`, úteis pra testar mudanças
+no script num subconjunto pequeno antes de rodar nos ~230 escudos).
 
 Ele só grava campos "candidato" no Firestore (`badgeGameCandidateUrl`,
 `badgeGameCandidateSourceUrl`) — nunca toca no `badgeGameUrl` real. Isso é
@@ -96,30 +85,63 @@ proposital: a revisão manual continua obrigatória antes de publicar.
 ```bash
 # 1. CI já rodou (ou rode manualmente: node scripts/game-badges.mjs generate)
 
-# 2. Gerar um token de Blob fresco (válido 7 dias) e colar em .env.local
-vercel blob signed-token --pathname "*" --operation put --operation get --valid-for 7d --json
-
-# 3. Baixar candidatos novos e montar a galeria de revisão
+# 2. Baixar candidatos novos e montar a galeria de revisão
 node scripts/game-badges.mjs review
 # abrir game-badge-review/review.html — apagar o game.png dos que ficaram ruins
 
-# 4. Publicar os aprovados
+# 3. Publicar os aprovados
 node scripts/game-badges.mjs publish
 
 # Resumo do andamento a qualquer momento
 node scripts/game-badges.mjs status
 ```
 
-Todos os comandos aceitam `--limit N`, `--only <teamId>`, `--force`.
+Todos os comandos aceitam `--limit N`, `--only <teamId1,teamId2,...>`, `--force`.
 
-## Por que PaddleOCR e não Tesseract/Gemini
+## Diagnóstico manual de um escudo específico
 
-- **Tesseract.js** (client-side, tentativa anterior): falhava em ~95% dos
+`scripts/remove_text.py` tem CLI própria pra depurar caso-a-caso, fora do
+fluxo do `game-badges.mjs`:
+
+```bash
+.venv/bin/python scripts/remove_text.py escudo.png -o limpo.png --debug
+# gera limpo_boxes.png (polígonos detectados) e limpo_mask.png (máscara final)
+```
+
+Flags úteis pra depuração: `--text-threshold`/`--low-text` (limiares do
+detector CRAFT — menores = mais permissivo, mais falso positivo também),
+`--engine cv` (força o inpainting clássico do OpenCV em vez do LaMa, mais
+rápido pra iterar), `--keep X0,Y0,X1,Y1` (protege uma região — ex: monograma
+central — de ser tratada como texto).
+
+## Por que EasyOCR + inpainting, e não PaddleOCR/Tesseract/Gemini
+
+- **Tesseract.js** (client-side, tentativa mais antiga): falhava em ~95% dos
   casos reais, mesmo depois de corrigir texto curvo/branco-sobre-cor — fonte
   estilizada de escudo é difícil demais pro Tesseract em geral.
 - **Gemini image-edit** (`question-badges.mjs`, usado hoje só na Study):
-  também não funcionou bem o suficiente quando testado pro caso dos Jogos.
-- **PaddleOCR** roda fora do navegador (sem limite de tamanho de bundle tipo
-  Vercel Function), detecta texto em qualquer orientação nativamente (sem
-  precisar do hack de desenrolar a borda circular que o Tesseract exigiu), e
-  já tem alta taxa de acerto em texto de cena/estilizado por padrão.
+  reescreve o escudo inteiro via IA generativa — também não funcionou bem o
+  suficiente quando testado pro caso dos Jogos.
+- **PaddleOCR + blur** (tentativa anterior deste pipeline): detectava bem
+  texto reto/lema, mas o detector simplesmente não enxergava nomes fortemente
+  arqueados (ex: "MANCHESTER" na borda de um escudo circular) — testado lado
+  a lado em vários escudos reais, mesmo ajustando os parâmetros de detecção.
+- **EasyOCR (CRAFT) + inpainting**: usa `reader.detect()` (não `readtext()`)
+  pra pegar SÓ a localização do texto, sem depender de reconhecer o que ele
+  diz — texto arqueado costuma ser ilegível pro reconhecedor mas ainda assim
+  detectável como "tem texto aqui". Comparado lado a lado nos mesmos escudos
+  problemáticos do PaddleOCR, capturou o nome inteiro onde o PaddleOCR não
+  achava nada, e o resultado é reconstrução do fundo (LaMa) em vez de blur.
+
+**Limitações conhecidas, ainda sem solução completa** (a revisão manual via
+`review`/`publish` é a rede de segurança, não uma exceção rara):
+- O detector CRAFT ocasionalmente devolve um polígono "engordado" cobrindo
+  boa parte do escudo (mitigado com um filtro de sanidade de tamanho, mas
+  pode ainda descartar alguma região de texto legítima nesses casos).
+- Fontes grandes têm um limite de altura pra distinguir "letra" de "anel/
+  emblema" dentro da região detectada — calibrado nos casos testados, mas
+  não é infalível pra qualquer fonte.
+- Inpainting em áreas pequenas/muito texturizadas/alto contraste às vezes
+  deixa um resíduo visível ("fantasma") em vez de reconstrução perfeita.
+- Nenhum dos dois detectores (PaddleOCR ou EasyOCR) é 100% confiável em
+  todos os escudos — cada um erra em casos diferentes e imprevisíveis.
