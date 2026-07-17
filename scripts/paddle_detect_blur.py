@@ -40,7 +40,24 @@ def get_ocr():
         # angle_cls handles rotated (not just curved) text; PP-OCR's own
         # detector already finds text of any orientation/shape, unlike
         # Tesseract's line-finding — no manual polar-unwrap trick needed.
-        _ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+        #
+        # The det_db_* / det_limit_side_len overrides loosen the detector
+        # beyond its defaults (box_thresh 0.6→0.3, unclip_ratio 1.5→2.5,
+        # limit_side_len 960→1920) — diagnosed via scripts/paddle_diagnose.py
+        # that tightly arched crest text (e.g. "MANCHESTER" following a
+        # crest's rim) falls below the default thresholds and gets dropped
+        # by PP-OCR's own detector before it ever reaches our confidence
+        # filter below. Higher resolution + a more permissive box threshold
+        # recovers most of it; still doesn't catch every case (e.g.
+        # "BLACKBURN ROVERS"), but is a clear improvement over the defaults.
+        _ocr = PaddleOCR(
+            use_angle_cls=True,
+            lang="en",
+            show_log=False,
+            det_db_box_thresh=0.3,
+            det_db_unclip_ratio=2.5,
+            det_limit_side_len=1920,
+        )
     return _ocr
 
 
