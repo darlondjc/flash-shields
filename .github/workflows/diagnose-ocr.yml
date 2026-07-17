@@ -11,6 +11,18 @@ on:
       urls:
         description: 'URLs dos escudos, separadas por vírgula'
         required: true
+      det_db_box_thresh:
+        description: 'det_db_box_thresh (padrão PP-OCR: 0.6 — menor = mais permissivo)'
+        required: false
+        default: ''
+      det_db_unclip_ratio:
+        description: 'det_db_unclip_ratio (padrão PP-OCR: 1.5 — maior = expande/funde mais)'
+        required: false
+        default: ''
+      det_limit_side_len:
+        description: 'det_limit_side_len (padrão PP-OCR: 960 — maior = mais resolução)'
+        required: false
+        default: ''
 
 jobs:
   diagnose:
@@ -26,6 +38,10 @@ jobs:
         run: pip install -r scripts/requirements.txt
 
       - name: Run diagnosis
+        env:
+          PADDLE_DET_DB_BOX_THRESH: ${{ inputs.det_db_box_thresh }}
+          PADDLE_DET_DB_UNCLIP_RATIO: ${{ inputs.det_db_unclip_ratio }}
+          PADDLE_DET_LIMIT_SIDE_LEN: ${{ inputs.det_limit_side_len }}
         run: |
           IFS=',' read -ra URLS <<< "${{ inputs.urls }}"
           python3 scripts/paddle_diagnose.py "${URLS[@]}"

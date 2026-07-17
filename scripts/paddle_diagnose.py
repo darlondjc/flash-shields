@@ -4,10 +4,23 @@ with NO confidence/length filtering and prints everything it found, plus
 image dimensions. Only used to inspect why detection fails/succeeds on a
 given crest — never called by game-badges.mjs.
 
+The det_db_* / det_limit_side_len knobs are overridable via env vars so we
+can test, without editing code, whether loosening PP-OCR's own internal
+detector (which runs *before* our confidence/length filters) picks up
+fragments of tightly-curved/arched text that the defaults discard outright:
+  PADDLE_DET_DB_BOX_THRESH   default 0.6  — lower = keeps lower-confidence
+                                             candidate boxes (more, noisier)
+  PADDLE_DET_DB_UNCLIP_RATIO default 1.5  — higher = expands/merges detected
+                                             regions more aggressively
+  PADDLE_DET_LIMIT_SIDE_LEN  default 960  — higher = analyzes the image at
+                                             higher resolution (helps small
+                                             text, slower)
+
 Usage: python3 paddle_diagnose.py <image_url_or_path> [...]
 """
 
 import json
+import os
 import sys
 import urllib.request
 
@@ -20,7 +33,15 @@ _ocr = None
 def get_ocr():
     global _ocr
     if _ocr is None:
-        _ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+        kwargs = {"use_angle_cls": True, "lang": "en", "show_log": False}
+        if os.environ.get("PADDLE_DET_DB_BOX_THRESH"):
+            kwargs["det_db_box_thresh"] = float(os.environ["PADDLE_DET_DB_BOX_THRESH"])
+        if os.environ.get("PADDLE_DET_DB_UNCLIP_RATIO"):
+            kwargs["det_db_unclip_ratio"] = float(os.environ["PADDLE_DET_DB_UNCLIP_RATIO"])
+        if os.environ.get("PADDLE_DET_LIMIT_SIDE_LEN"):
+            kwargs["det_limit_side_len"] = int(os.environ["PADDLE_DET_LIMIT_SIDE_LEN"])
+        print(f"PaddleOCR kwargs: {kwargs}", file=sys.stderr)
+        _ocr = PaddleOCR(**kwargs)
     return _ocr
 
 
