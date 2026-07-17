@@ -48,9 +48,16 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: npx --yes vercel@latest env pull .env.production.local --environment=production --token="$VERCEL_TOKEN"
 
-      # FIREBASE_* comes from .env.production.local (written by the previous
-      # step) via game-badges.mjs's own loadEnv() — no separate Firebase
-      # secrets needed here, `vercel env pull` already brought them along
-      # with VERCEL_OIDC_TOKEN/BLOB_STORE_ID.
+      # FIREBASE_* must come from GitHub secrets, not from the
+      # .env.production.local pulled above: those Firebase vars are marked
+      # "Sensitive" in the Vercel dashboard, and Sensitive vars are never
+      # readable via `vercel env pull`/CLI (always come back as the literal
+      # string "[SENSITIVE]") — only injected at runtime inside Vercel's own
+      # builds/functions. VERCEL_OIDC_TOKEN/BLOB_STORE_ID aren't Sensitive,
+      # so those two still come from the previous step's pulled file.
       - name: Generate game badge candidates
+        env:
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
         run: node scripts/game-badges.mjs generate
