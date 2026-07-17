@@ -48,9 +48,9 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: npx --yes vercel@latest env pull .env.production.local --environment=production --token="$VERCEL_TOKEN"
 
+      # FIREBASE_* comes from .env.production.local (written by the previous
+      # step) via game-badges.mjs's own loadEnv() — no separate Firebase
+      # secrets needed here, `vercel env pull` already brought them along
+      # with VERCEL_OIDC_TOKEN/BLOB_STORE_ID.
       - name: Generate game badge candidates
-        env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-          FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
         run: node scripts/game-badges.mjs generate
