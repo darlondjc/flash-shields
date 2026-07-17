@@ -18,15 +18,18 @@ import json
 import re
 import sys
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 from paddleocr import PaddleOCR
 
 MIN_CONFIDENCE = 0.6
 MIN_TEXT_LENGTH = 3
 HAS_LETTER = re.compile(r"[A-Za-zÀ-ÖØ-öø-ÿ]")
-# Padding around each detected box before blurring, as a fraction of the
-# box's own size — covers anti-aliased letter edges the polygon just missed.
-BOX_PADDING_RATIO = 0.15
+# Padding around each detected polygon before blurring, as a fraction of its
+# own size (scaled outward from its centroid) — covers anti-aliased letter
+# edges the polygon just missed, without ballooning to the full bounding box.
+POLYGON_PADDING_RATIO = 0.15
+# Softens the mask edge so the blurred patch doesn't have a hard border.
+MASK_FEATHER_RADIUS = 3
 
 _ocr = None
 
@@ -41,10 +44,10 @@ def get_ocr():
     return _ocr
 
 
-def detect_boxes(image_path):
+def detect_polygons(image_path):
     result = get_ocr().ocr(image_path, cls=True)
     lines = result[0] if result and result[0] else []
-    boxes = []
+    polygons = []
     for polygon, (text, confidence) in lines:
         if confidence < MIN_CONFIDENCE:
             continue
@@ -52,34 +55,41 @@ def detect_boxes(image_path):
             continue
         if not HAS_LETTER.search(text):
             continue
-        xs = [point[0] for point in polygon]
-        ys = [point[1] for point in polygon]
-        boxes.append((min(xs), min(ys), max(xs), max(ys)))
-    return boxes
+        polygons.append([(point[0], point[1]) for point in polygon])
+    return polygons
 
 
-def pad_box(box, width, height):
-    x0, y0, x1, y1 = box
-    pad_x = (x1 - x0) * BOX_PADDING_RATIO
-    pad_y = (y1 - y0) * BOX_PADDING_RATIO
-    return (
-        max(0, int(x0 - pad_x)),
-        max(0, int(y0 - pad_y)),
-        min(width, int(x1 + pad_x)),
-        min(height, int(y1 + pad_y)),
-    )
+def pad_polygon(polygon, ratio):
+    cx = sum(x for x, _ in polygon) / len(polygon)
+    cy = sum(y for _, y in polygon) / len(polygon)
+    scale = 1 + ratio
+    return [(cx + (x - cx) * scale, cy + (y - cy) * scale) for x, y in polygon]
 
 
-def blur_boxes(image_path, boxes, output_path):
+def blur_polygons(image_path, polygons, output_path):
     image = Image.open(image_path).convert("RGBA")
-    for box in boxes:
-        px0, py0, px1, py1 = pad_box(box, image.width, image.height)
+    for polygon in polygons:
+        padded = pad_polygon(polygon, POLYGON_PADDING_RATIO)
+        xs = [x for x, _ in padded]
+        ys = [y for _, y in padded]
+        px0, py0 = max(0, int(min(xs))), max(0, int(min(ys)))
+        px1, py1 = min(image.width, int(max(xs)) + 1), min(image.height, int(max(ys)) + 1)
         if px1 <= px0 or py1 <= py0:
             continue
+
         region = image.crop((px0, py0, px1, py1))
         radius = max(6, min(region.width, region.height) * 0.35)
         blurred = region.filter(ImageFilter.GaussianBlur(radius=radius))
-        image.paste(blurred, (px0, py0))
+
+        # Blur only the pixels inside the (padded) text polygon itself, not
+        # its full axis-aligned bounding box — for curved/arched text (e.g.
+        # a name following a crest's rim) that box can be much bigger than
+        # the actual glyphs, over-blurring unrelated crest artwork.
+        mask = Image.new("L", region.size, 0)
+        ImageDraw.Draw(mask).polygon([(x - px0, y - py0) for x, y in padded], fill=255)
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=MASK_FEATHER_RADIUS))
+
+        image.paste(Image.composite(blurred, region, mask), (px0, py0))
     image.save(output_path, "PNG")
 
 
@@ -89,10 +99,10 @@ def main():
         sys.exit(2)
     input_path, output_path = sys.argv[1], sys.argv[2]
 
-    boxes = detect_boxes(input_path)
-    if boxes:
-        blur_boxes(input_path, boxes, output_path)
-    print(json.dumps({"regionsFound": len(boxes)}))
+    polygons = detect_polygons(input_path)
+    if polygons:
+        blur_polygons(input_path, polygons, output_path)
+    print(json.dumps({"regionsFound": len(polygons)}))
 
 
 if __name__ == "__main__":

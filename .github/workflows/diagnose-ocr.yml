@@ -1,0 +1,31 @@
+name: Diagnose PaddleOCR detection
+
+# Disparo manual só pra depurar por que o PaddleOCR não detecta (ou detecta
+# mal) texto em um escudo específico — roda scripts/paddle_diagnose.py, que
+# imprime TODAS as detecções brutas (sem os filtros de confiança/tamanho que
+# scripts/paddle_detect_blur.py aplica) direto no log do job. Não escreve em
+# lugar nenhum (Firestore/Blob) — puramente leitura, sem efeitos colaterais.
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: 'URLs dos escudos, separadas por vírgula'
+        required: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run diagnosis
+        run: |
+          IFS=',' read -ra URLS <<< "${{ inputs.urls }}"
+          python3 scripts/paddle_diagnose.py "${URLS[@]}"

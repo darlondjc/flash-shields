@@ -9,6 +9,16 @@ on:
   schedule:
     - cron: '0 9 * * 1'
   workflow_dispatch:
+    inputs:
+      only:
+        description: 'IDs de time separados por vírgula (vazio = todos que precisam)'
+        required: false
+        default: ''
+      force:
+        description: 'Reprocessar mesmo quem já está em dia (útil pra testar mudanças no blur)'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   generate:
@@ -60,4 +70,7 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
           FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
-        run: node scripts/game-badges.mjs generate
+        run: >-
+          node scripts/game-badges.mjs generate
+          ${{ inputs.only && format('--only {0}', inputs.only) || '' }}
+          ${{ inputs.force && '--force' || '' }}

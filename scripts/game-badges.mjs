@@ -110,7 +110,7 @@ function parseArgs() {
   const flags = { limit: Infinity, only: null, force: false };
   for (let i = 1; i < args.length; i++) {
     if (args[i] === '--limit') flags.limit = Number(args[++i]);
-    else if (args[i] === '--only') flags.only = args[++i];
+    else if (args[i] === '--only') flags.only = args[++i].split(',');
     else if (args[i] === '--force') flags.force = true;
   }
   return { command, flags };
@@ -135,7 +135,7 @@ async function generate(flags) {
 
   const snapshot = await db.collection('teams').get();
   let teams = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(team => team.badgeUrl);
-  if (flags.only) teams = teams.filter(team => team.id === flags.only);
+  if (flags.only) teams = teams.filter(team => flags.only.includes(team.id));
   if (!flags.force) {
     teams = teams.filter(team => team.badgeGameCandidateSourceUrl !== team.badgeUrl);
   }
@@ -196,7 +196,7 @@ async function review(flags) {
   let teams = snapshot.docs
     .map(doc => ({ id: doc.id, ...doc.data() }))
     .filter(team => team.badgeGameCandidateUrl);
-  if (flags.only) teams = teams.filter(team => team.id === flags.only);
+  if (flags.only) teams = teams.filter(team => flags.only.includes(team.id));
   if (!flags.force) {
     teams = teams.filter(team => manifest.teams[team.id]?.candidateUrl !== team.badgeGameCandidateUrl);
   }
@@ -238,7 +238,7 @@ async function publish(flags) {
   const manifest = loadManifest();
 
   let entries = Object.entries(manifest.teams);
-  if (flags.only) entries = entries.filter(([id]) => id === flags.only);
+  if (flags.only) entries = entries.filter(([id]) => flags.only.includes(id));
   if (!flags.force) entries = entries.filter(([, entry]) => !entry.publishedAt);
 
   let published = 0;
