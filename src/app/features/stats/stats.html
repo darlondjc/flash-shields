@@ -69,7 +69,7 @@
           @for (session of store.studySessions(); track session.id) {
             <div class="card deck-accuracy-row" data-testid="study-session">
               <span class="deck-accuracy-row__name">
-                {{ formatDate(session.startedAt) }} · {{ session.cardCount }} cards
+                {{ formatDate(session.startedAt) }} · {{ session.cardCount }} cartas
               </span>
               <span class="deck-accuracy-row__value">{{ formatPercent(session.accuracy) }}</span>
             </div>

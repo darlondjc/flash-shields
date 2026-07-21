@@ -160,7 +160,7 @@ describe('Stats', () => {
     fixture.detectChanges();
 
     const row = fixture.nativeElement.querySelector('[data-testid="study-session"]');
-    expect(row.textContent).toContain('2 cards');
+    expect(row.textContent).toContain('2 cartas');
     expect(row.textContent).toContain('50%');
   });
 
