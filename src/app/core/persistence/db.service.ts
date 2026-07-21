@@ -36,6 +36,14 @@ export class DbService extends Dexie {
     this.version(2).stores({
       sessions: 'id, deckId, mode, startedAt',
     });
+    // Bumping the version number alone would NOT clear old rows — Dexie only
+    // recreates indexes when the schema string changes, and this one hasn't.
+    // The explicit .upgrade() is what actually discards the SM-2-shaped rows
+    // (repetitions/easeFactor/intervalDays) that don't carry the new `level`
+    // field, which would otherwise crash the app at runtime.
+    this.version(3).stores({
+      reviewStates: 'id, deckId, dueDate',
+    }).upgrade(tx => tx.table('reviewStates').clear());
   }
 
   async upsertTeam(team: Team): Promise<void> {
