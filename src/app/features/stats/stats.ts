@@ -37,6 +37,18 @@ export class Stats {
     return `${Math.round(value * 100)}%`;
   }
 
+  formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  }
+
+  heatmapLevel(count: number): number {
+    if (count === 0) return 0;
+    if (count < 5) return 1;
+    if (count < 10) return 2;
+    if (count < 20) return 3;
+    return 4;
+  }
+
   modeLabel(mode: GameMode): string {
     switch (mode) {
       case 'multiple-choice':

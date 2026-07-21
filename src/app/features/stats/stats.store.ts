@@ -16,6 +16,18 @@ export interface ModeStreak {
   bestStreak: number;
 }
 
+export interface StudySessionSummary {
+  id: string;
+  startedAt: string;
+  cardCount: number;
+  accuracy: number;
+}
+
+export interface ReviewHeatmapDay {
+  date: string;
+  count: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class StatsStore {
   private db = inject(DbService);
@@ -24,6 +36,8 @@ export class StatsStore {
   readonly overallAccuracy = signal(0);
   readonly accuracyByDeck = signal<DeckAccuracy[]>([]);
   readonly bestStreakByMode = signal<ModeStreak[]>([]);
+  readonly studySessions = signal<StudySessionSummary[]>([]);
+  readonly reviewHeatmap = signal<ReviewHeatmapDay[]>([]);
 
   async load() {
     const sessions = await this.db.sessions.toArray();
@@ -32,6 +46,10 @@ export class StatsStore {
     this.overallAccuracy.set(computeAccuracy(sessions.flatMap(session => session.answers)));
     this.accuracyByDeck.set(await this.computeAccuracyByDeck(sessions));
     this.bestStreakByMode.set(computeBestStreakByMode(sessions));
+
+    const studySessions = sessions.filter(session => session.mode === 'study');
+    this.studySessions.set(computeStudySessionSummaries(studySessions));
+    this.reviewHeatmap.set(computeReviewHeatmap(studySessions));
   }
 
   private async computeAccuracyByDeck(sessions: Session[]): Promise<DeckAccuracy[]> {
@@ -90,4 +108,40 @@ function longestCorrectStreak(answers: { correct: boolean }[]): number {
     longest = Math.max(longest, current);
   }
   return longest;
+}
+
+const HEATMAP_DAYS = 90;
+
+function computeStudySessionSummaries(sessions: Session[]): StudySessionSummary[] {
+  return sessions
+    .map(session => ({
+      id: session.id,
+      startedAt: session.startedAt,
+      cardCount: session.answers.length,
+      accuracy: computeAccuracy(session.answers),
+    }))
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+}
+
+function computeReviewHeatmap(sessions: Session[]): ReviewHeatmapDay[] {
+  const countsByDate = new Map<string, number>();
+  for (const session of sessions) {
+    for (const answer of session.answers) {
+      const date = answer.answeredAt.slice(0, 10);
+      countsByDate.set(date, (countsByDate.get(date) ?? 0) + 1);
+    }
+  }
+
+  // Anchored on the same UTC-midnight representation `answeredAt.slice(0, 10)`
+  // implies, so the "today" bucket lines up with real answers instead of
+  // drifting by a day near local-timezone midnight.
+  const todayUtc = new Date(new Date().toISOString().slice(0, 10));
+  const days: ReviewHeatmapDay[] = [];
+  for (let i = HEATMAP_DAYS - 1; i >= 0; i--) {
+    const date = new Date(todayUtc);
+    date.setUTCDate(date.getUTCDate() - i);
+    const key = date.toISOString().slice(0, 10);
+    days.push({ date: key, count: countsByDate.get(key) ?? 0 });
+  }
+  return days;
 }

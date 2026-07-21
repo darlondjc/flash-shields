@@ -59,5 +59,33 @@
         }
       </div>
     </section>
+
+    <section aria-label="Estudo">
+      <p class="eyebrow">Estudo</p>
+      @if (store.studySessions().length === 0) {
+        <p class="study-history-empty">Nenhuma sessão de estudo registrada ainda.</p>
+      } @else {
+        <div class="deck-accuracy-list">
+          @for (session of store.studySessions(); track session.id) {
+            <div class="card deck-accuracy-row" data-testid="study-session">
+              <span class="deck-accuracy-row__name">
+                {{ formatDate(session.startedAt) }} · {{ session.cardCount }} cards
+              </span>
+              <span class="deck-accuracy-row__value">{{ formatPercent(session.accuracy) }}</span>
+            </div>
+          }
+        </div>
+
+        <div class="heatmap" data-testid="review-heatmap">
+          @for (day of store.reviewHeatmap(); track day.date) {
+            <span
+              class="heatmap__cell"
+              [attr.data-level]="heatmapLevel(day.count)"
+              [title]="day.date + ': ' + day.count + ' revisões'"
+            ></span>
+          }
+        </div>
+      }
+    </section>
   }
 </main>

@@ -116,4 +116,93 @@ describe('Stats', () => {
     expect(modeRow.textContent).toContain('Reverso');
     expect(modeRow.textContent).not.toContain('reverse');
   });
+
+  it('shows Estudo as the mode label for study sessions in best streak', async () => {
+    const session: Session = {
+      id: 'sess-1',
+      deckId: 'deck-1',
+      mode: 'study',
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      answers: [{ teamId: 't1', correct: true, responseMs: 1000, answeredAt: new Date().toISOString() }],
+      score: 1,
+    };
+    await db.sessions.put(session);
+
+    fixture = TestBed.createComponent(Stats);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const modeRow = fixture.nativeElement.querySelector('[data-testid="mode-streak"]');
+    expect(modeRow.textContent).toContain('Estudo');
+  });
+
+  it('lists past study sessions with date, card count and accuracy', async () => {
+    const startedAt = new Date('2026-07-20T10:00:00Z').toISOString();
+    const session: Session = {
+      id: 'sess-study-1',
+      deckId: 'deck-1',
+      mode: 'study',
+      startedAt,
+      endedAt: new Date('2026-07-20T10:05:00Z').toISOString(),
+      answers: [
+        { teamId: 't1', correct: true, responseMs: 1000, answeredAt: startedAt },
+        { teamId: 't2', correct: false, responseMs: 1000, answeredAt: startedAt },
+      ],
+      score: 1,
+    };
+    await db.sessions.put(session);
+
+    fixture = TestBed.createComponent(Stats);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const row = fixture.nativeElement.querySelector('[data-testid="study-session"]');
+    expect(row.textContent).toContain('2 cards');
+    expect(row.textContent).toContain('50%');
+  });
+
+  it('shows a message instead of the study history when no study session exists yet', async () => {
+    const session: Session = {
+      id: 'sess-1',
+      deckId: 'deck-1',
+      mode: 'multiple-choice',
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      answers: [{ teamId: 't1', correct: true, responseMs: 1000, answeredAt: new Date().toISOString() }],
+      score: 1,
+    };
+    await db.sessions.put(session);
+
+    fixture = TestBed.createComponent(Stats);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Nenhuma sessão de estudo registrada ainda');
+    expect(fixture.nativeElement.querySelector('[data-testid="review-heatmap"]')).toBeFalsy();
+  });
+
+  it('renders a heatmap cell for every day once a study session exists', async () => {
+    const session: Session = {
+      id: 'sess-study-1',
+      deckId: 'deck-1',
+      mode: 'study',
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      answers: [{ teamId: 't1', correct: true, responseMs: 1000, answeredAt: new Date().toISOString() }],
+      score: 1,
+    };
+    await db.sessions.put(session);
+
+    fixture = TestBed.createComponent(Stats);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const heatmap = fixture.nativeElement.querySelector('[data-testid="review-heatmap"]');
+    expect(heatmap.querySelectorAll('.heatmap__cell').length).toBe(90);
+  });
 });

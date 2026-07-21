@@ -151,4 +151,60 @@ describe('StatsStore', () => {
       accuracy: 0,
     });
   });
+
+  it('summarizes past study sessions with date, card count, and accuracy, newest first', async () => {
+    await db.sessions.bulkPut([
+      makeSession({
+        id: 's1',
+        mode: 'study',
+        startedAt: '2026-07-18T10:00:00.000Z',
+        answers: [answer(true), answer(false)],
+      }),
+      makeSession({
+        id: 's2',
+        mode: 'study',
+        startedAt: '2026-07-20T10:00:00.000Z',
+        answers: [answer(true)],
+      }),
+    ]);
+
+    await store.load();
+
+    expect(store.studySessions()).toEqual([
+      { id: 's2', startedAt: '2026-07-20T10:00:00.000Z', cardCount: 1, accuracy: 1 },
+      { id: 's1', startedAt: '2026-07-18T10:00:00.000Z', cardCount: 2, accuracy: 0.5 },
+    ]);
+  });
+
+  it('excludes non-study sessions from the study session history', async () => {
+    await db.sessions.put(makeSession({ mode: 'multiple-choice', answers: [answer(true)] }));
+
+    await store.load();
+
+    expect(store.studySessions()).toEqual([]);
+  });
+
+  it('builds a 90-day review heatmap counting only study-session answers per day', async () => {
+    const today = new Date().toISOString().slice(0, 10);
+    await db.sessions.bulkPut([
+      makeSession({
+        mode: 'study',
+        answers: [
+          { teamId: 't1', correct: true, responseMs: 1000, answeredAt: `${today}T09:00:00.000Z` },
+          { teamId: 't2', correct: true, responseMs: 1000, answeredAt: `${today}T09:05:00.000Z` },
+        ],
+      }),
+      makeSession({
+        mode: 'multiple-choice',
+        answers: [{ teamId: 't3', correct: true, responseMs: 1000, answeredAt: `${today}T09:10:00.000Z` }],
+      }),
+    ]);
+
+    await store.load();
+
+    const heatmap = store.reviewHeatmap();
+    expect(heatmap).toHaveLength(90);
+    expect(heatmap[heatmap.length - 1]).toEqual({ date: today, count: 2 });
+    expect(heatmap[0].date < today).toBe(true);
+  });
 });

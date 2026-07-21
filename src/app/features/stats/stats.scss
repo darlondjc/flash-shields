@@ -94,3 +94,38 @@
   font-weight: 800;
   color: var(--text-muted);
 }
+
+.study-history-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.heatmap {
+  display: grid;
+  grid-template-columns: repeat(15, 1fr);
+  gap: 0.2rem;
+  margin-top: 0.75rem;
+}
+
+.heatmap__cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: var(--surface-raised);
+
+  &[data-level='1'] {
+    background: color-mix(in srgb, var(--accent) 25%, var(--surface-raised));
+  }
+
+  &[data-level='2'] {
+    background: color-mix(in srgb, var(--accent) 50%, var(--surface-raised));
+  }
+
+  &[data-level='3'] {
+    background: color-mix(in srgb, var(--accent) 75%, var(--surface-raised));
+  }
+
+  &[data-level='4'] {
+    background: var(--accent);
+  }
+}
