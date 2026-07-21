@@ -1,4 +1,4 @@
-import { applyLevelGrade, today, addDays } from './level';
+import { applyLevelGrade, today, addDays, daysBetween } from './level';
 import { ReviewState } from '../models/review-state.model';
 
 function makeState(overrides: Partial<ReviewState> = {}): ReviewState {
@@ -67,5 +67,31 @@ describe('applyLevelGrade', () => {
     const state = makeState({ level: 1 });
     const result = applyLevelGrade(state, 'acertou');
     expect(result.lastReviewed).toBe(today());
+  });
+
+  it('stamps lastGrade with the grade that was given', () => {
+    const state = makeState({ level: 1 });
+    const result = applyLevelGrade(state, 'acertou');
+    expect(result.lastGrade).toBe('acertou');
+  });
+
+  it('overwrites a previous lastGrade even when the level does not change', () => {
+    const state = makeState({ level: 2, lastGrade: 'facil' });
+    const result = applyLevelGrade(state, 'dificil');
+    expect(result.lastGrade).toBe('dificil');
+  });
+});
+
+describe('daysBetween', () => {
+  it('returns 0 for the same date', () => {
+    expect(daysBetween(today(), today())).toBe(0);
+  });
+
+  it('returns a positive count when the second date is later', () => {
+    expect(daysBetween(today(), addDays(today(), 3))).toBe(3);
+  });
+
+  it('returns a negative count when the second date is earlier', () => {
+    expect(daysBetween(today(), addDays(today(), -2))).toBe(-2);
   });
 });

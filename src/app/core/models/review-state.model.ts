@@ -6,6 +6,7 @@ export interface ReviewState {
   level: number;
   dueDate: string;
   lastReviewed?: string;
+  lastGrade?: ReviewGrade;
   lapses: number;
   suspended: boolean;
 }

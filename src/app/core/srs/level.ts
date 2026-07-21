@@ -10,6 +10,11 @@ export function addDays(dateStr: string, days: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function daysBetween(fromDateStr: string, toDateStr: string): number {
+  const msPerDay = 1000 * 60 * 60 * 24;
+  return Math.round((new Date(toDateStr).getTime() - new Date(fromDateStr).getTime()) / msPerDay);
+}
+
 const LEVEL_INTERVAL_DAYS = [0, 1, 3, 7, 30, 90];
 const MAX_LEVEL = LEVEL_INTERVAL_DAYS.length - 1;
 
@@ -32,5 +37,6 @@ export function applyLevelGrade(state: ReviewState, grade: ReviewGrade): ReviewS
     lapses: grade === 'errei' ? state.lapses + 1 : state.lapses,
     dueDate: addDays(today(), LEVEL_INTERVAL_DAYS[level]),
     lastReviewed: today(),
+    lastGrade: grade,
   };
 }
