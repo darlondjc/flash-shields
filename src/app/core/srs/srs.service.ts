@@ -7,6 +7,14 @@ import { applyLevelGrade, today } from './level';
 import { NEW_CARDS_PER_DAY } from './srs.constants';
 import { shuffle } from '../util/random.util';
 
+export interface DeckStudySummary {
+  memorizedCount: number;
+  toRevisitCount: number;
+  lastStudiedAt: string | null;
+  nextStudyAvailable: boolean;
+  nextStudyDueDate: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SrsService {
   private db = inject(DbService);
@@ -56,5 +64,38 @@ export class SrsService {
     const updated = applyLevelGrade(reviewState, grade);
     await this.db.reviewStates.put({ ...updated, id });
     return updated.level;
+  }
+
+  async getDeckSummary(deckId: string): Promise<DeckStudySummary> {
+    const deck = await this.deckService.getDeck(deckId);
+    const states = await this.db.reviewStates.where('deckId').equals(deckId).toArray();
+    const currentDate = today();
+
+    const memorizedCount = states.filter(state => !state.suspended && state.lastGrade === 'facil').length;
+
+    const dueCount = states.filter(state => !state.suspended && state.dueDate <= currentDate).length;
+    const newCount = (deck?.teamIds.length ?? 0) - states.length;
+    const toRevisitCount = dueCount + Math.max(0, newCount);
+
+    const sessions = await this.db.sessions.where('deckId').equals(deckId).toArray();
+    const studySessions = sessions.filter(session => session.mode === 'study');
+    const lastStudiedAt = studySessions.length
+      ? studySessions.reduce((latest, session) => (session.startedAt > latest ? session.startedAt : latest), studySessions[0].startedAt)
+      : null;
+
+    const futureDueDates = states
+      .filter(state => !state.suspended && state.dueDate > currentDate)
+      .map(state => state.dueDate);
+    const nextStudyDueDate = toRevisitCount === 0 && futureDueDates.length
+      ? futureDueDates.reduce((min, date) => (date < min ? date : min))
+      : null;
+
+    return {
+      memorizedCount,
+      toRevisitCount,
+      lastStudiedAt,
+      nextStudyAvailable: toRevisitCount > 0,
+      nextStudyDueDate,
+    };
   }
 }
