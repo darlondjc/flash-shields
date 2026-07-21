@@ -38,7 +38,11 @@ export class Stats {
   }
 
   formatDate(iso: string): string {
-    return new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    // Reads the day/month straight off the ISO string's UTC date portion instead of
+    // going through `Date`'s local-timezone conversion, so this stays consistent with
+    // the heatmap in StatsStore (which also buckets by the UTC date substring).
+    const [, month, day] = iso.slice(0, 10).split('-');
+    return `${day}/${month}`;
   }
 
   heatmapLevel(count: number): number {

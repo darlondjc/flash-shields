@@ -52,6 +52,9 @@ export class StudyStore {
 
     this.queue.update(q => {
       const rest = q.slice(1);
+      // Level-based, not grade-based: a `dificil` grade keeps an already-level-0
+      // card at level 0, so it must still be reinserted here even though it's
+      // recorded as `correct: true` in the answer above.
       if (resultLevel > 0) return rest;
       const insertAt = Math.min(rest.length, RELEARN_INSERT_OFFSET);
       return [...rest.slice(0, insertAt), team, ...rest.slice(insertAt)];
