@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { LeaguePicker } from './league-picker';
 import { ImportService } from '../../core/data/import.service';
 import { DeckService } from '../../core/decks/deck.service';
@@ -70,6 +70,10 @@ describe('LeaguePicker', () => {
     fixture = TestBed.createComponent(LeaguePicker);
   });
 
+  afterEach(() => {
+    localStorage.clear();
+  });
+
   it('shows country selection cards first', async () => {
     await settle();
     expect(fixture.nativeElement.querySelector('[data-testid="select-country"]')).toBeTruthy();
@@ -95,5 +99,59 @@ describe('LeaguePicker', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="study-link"]')).toBeFalsy();
     expect(fixture.nativeElement.querySelector('[data-testid="game-link"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="reverse-link"]')).toBeTruthy();
+  });
+
+  it('restores the last selected league from localStorage when there is no ?league query param', async () => {
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+    localStorage.setItem('flash-shields:last-league:study', '4328');
+    fixture.componentRef.setInput('actions', ['study']);
+
+    await settle();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="select-country"]')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('[data-testid="study-link"]')).toBeTruthy();
+  });
+
+  it('prefers the ?league query param over localStorage when both are set', async () => {
+    localStorage.setItem('flash-shields:last-league:study', '4335');
+    // This test builds its own fixture below (construction happens AFTER
+    // this line), unlike the other tests which reuse the outer `fixture`
+    // built in `beforeEach` (construction happens BEFORE their mock setup).
+    // That reversed ordering means the constructor's own `refreshDecks()`
+    // call — not just the effect's — can consume a queued `mockResolvedValueOnce`
+    // here, so use a persistent `mockResolvedValue` instead: every call
+    // (constructor's and the effect's) then returns the same deck regardless
+    // of call order.
+    deckServiceSpy.listDecks.mockResolvedValue([newDeck]);
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [LeaguePicker],
+      providers: [
+        provideRouter([]),
+        { provide: ImportService, useValue: importSpy },
+        { provide: DeckService, useValue: deckServiceSpy },
+        { provide: LeagueService, useValue: leagueServiceSpy },
+        { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({ league: '4328' }) } } },
+      ],
+    }).compileComponents();
+
+    const queryParamFixture = TestBed.createComponent(LeaguePicker);
+    queryParamFixture.componentRef.setInput('actions', ['study']);
+    queryParamFixture.detectChanges();
+    await queryParamFixture.whenStable();
+    queryParamFixture.detectChanges();
+
+    expect(queryParamFixture.nativeElement.querySelector('[data-testid="study-link"]')).toBeTruthy();
+  });
+
+  it('remembers the selected league in localStorage under a key scoped to the current actions', async () => {
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+    fixture.componentRef.setInput('actions', ['study']);
+
+    await selectFirstLeague();
+
+    expect(localStorage.getItem('flash-shields:last-league:study')).toBe('4328');
+    expect(localStorage.getItem('flash-shields:last-league:play-reverse')).toBeNull();
   });
 });

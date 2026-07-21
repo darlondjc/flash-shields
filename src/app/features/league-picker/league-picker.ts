@@ -15,6 +15,8 @@ import { Deck } from '../../core/models/deck.model';
 import { League } from '../../core/models/league.model';
 import { LeagueBadge } from '../../shared/ui/league-badge';
 
+const LAST_LEAGUE_KEY_PREFIX = 'flash-shields:last-league:';
+
 export type LeaguePickerAction = 'study' | 'play' | 'reverse';
 
 @Component({
@@ -56,7 +58,14 @@ export class LeaguePicker {
 
   constructor() {
     this.refreshDecks();
-    this.restoreSelectionFromQueryParams();
+
+    // `actions()` only holds its real bound value once Angular applies inputs
+    // (which happens after the constructor runs), so this can't be called
+    // directly above — effect() defers it to the first change-detection pass,
+    // by which point the real value is in place.
+    effect(() => {
+      this.restoreLastSelection();
+    });
 
     // Background imports (first-run boot import, or "Atualizar dados
     // importados" from Configurações) tick ImportService.progress as each
@@ -72,8 +81,8 @@ export class LeaguePicker {
     return this.actions().includes(action);
   }
 
-  private restoreSelectionFromQueryParams() {
-    const externalId = this.route.snapshot.queryParamMap.get('league');
+  private restoreLastSelection() {
+    const externalId = this.route.snapshot.queryParamMap.get('league') ?? localStorage.getItem(this.lastLeagueKey());
     if (!externalId) return;
 
     const config = this.leagueConfigs.find(c => c.externalId === externalId);
@@ -81,6 +90,10 @@ export class LeaguePicker {
 
     this.selectedCountry.set(config.country);
     this.selected.set(config);
+  }
+
+  private lastLeagueKey(): string {
+    return `${LAST_LEAGUE_KEY_PREFIX}${[...this.actions()].sort().join('-')}`;
   }
 
   deckForLeague(externalId: string): Deck | undefined {
@@ -140,7 +153,7 @@ export class LeaguePicker {
     this.error.set(null);
 
     if (this.deckForLeague(config.externalId)) {
-      this.selected.set(config);
+      this.rememberSelection(config);
       return;
     }
 
@@ -155,7 +168,7 @@ export class LeaguePicker {
         this.decks.set(alreadyExists ? existingDecks : [...existingDecks, createdDeck]);
       }
 
-      this.selected.set(config);
+      this.rememberSelection(config);
       void this.refreshDecks();
     } catch {
       this.selected.set(null);
@@ -163,6 +176,11 @@ export class LeaguePicker {
     } finally {
       this.importingId.set(null);
     }
+  }
+
+  private rememberSelection(config: LeagueImportConfig) {
+    this.selected.set(config);
+    localStorage.setItem(this.lastLeagueKey(), config.externalId);
   }
 
   private async refreshDecks() {
