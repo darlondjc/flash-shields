@@ -6,6 +6,8 @@ import { LeaguePicker } from './league-picker';
 import { ImportService } from '../../core/data/import.service';
 import { DeckService } from '../../core/decks/deck.service';
 import { LeagueService } from '../../core/leagues/league.service';
+import { SrsService } from '../../core/srs/srs.service';
+import { today, addDays } from '../../core/srs/level';
 import { League } from '../../core/models/league.model';
 
 describe('LeaguePicker', () => {
@@ -13,6 +15,7 @@ describe('LeaguePicker', () => {
   let importSpy: { importLeague: ReturnType<typeof vi.fn>; progress: ReturnType<typeof signal> };
   let deckServiceSpy: { listDecks: ReturnType<typeof vi.fn>; createLeagueDeck: ReturnType<typeof vi.fn> };
   let leagueServiceSpy: { getLeague: ReturnType<typeof vi.fn> };
+  let srsServiceSpy: { getDeckSummary: ReturnType<typeof vi.fn> };
 
   const league: League = {
     id: 'ts-4328',
@@ -57,6 +60,15 @@ describe('LeaguePicker', () => {
       createLeagueDeck: vi.fn().mockResolvedValue(newDeck),
     };
     leagueServiceSpy = { getLeague: vi.fn().mockResolvedValue(undefined) };
+    srsServiceSpy = {
+      getDeckSummary: vi.fn().mockResolvedValue({
+        memorizedCount: 0,
+        toRevisitCount: 0,
+        lastStudiedAt: null,
+        nextStudyAvailable: true,
+        nextStudyDueDate: null,
+      }),
+    };
 
     await TestBed.configureTestingModule({
       imports: [LeaguePicker],
@@ -65,6 +77,7 @@ describe('LeaguePicker', () => {
         { provide: ImportService, useValue: importSpy },
         { provide: DeckService, useValue: deckServiceSpy },
         { provide: LeagueService, useValue: leagueServiceSpy },
+        { provide: SrsService, useValue: srsServiceSpy },
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(LeaguePicker);
@@ -132,6 +145,7 @@ describe('LeaguePicker', () => {
         { provide: ImportService, useValue: importSpy },
         { provide: DeckService, useValue: deckServiceSpy },
         { provide: LeagueService, useValue: leagueServiceSpy },
+        { provide: SrsService, useValue: srsServiceSpy },
         { provide: ActivatedRoute, useValue: { snapshot: { queryParamMap: convertToParamMap({ league: '4328' }) } } },
       ],
     }).compileComponents();
@@ -153,5 +167,81 @@ describe('LeaguePicker', () => {
 
     expect(localStorage.getItem('flash-shields:last-league:study')).toBe('4328');
     expect(localStorage.getItem('flash-shields:last-league:play-reverse')).toBeNull();
+  });
+
+  it('shows the study summary card only when the study action is present', async () => {
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+    srsServiceSpy.getDeckSummary.mockResolvedValueOnce({
+      memorizedCount: 5,
+      toRevisitCount: 2,
+      lastStudiedAt: null,
+      nextStudyAvailable: true,
+      nextStudyDueDate: null,
+    });
+    fixture.componentRef.setInput('actions', ['study']);
+
+    await selectFirstLeague();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="study-summary"]')).toBeTruthy();
+  });
+
+  it('hides the study summary card for actions=["play","reverse"]', async () => {
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+    fixture.componentRef.setInput('actions', ['play', 'reverse']);
+
+    await selectFirstLeague();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="study-summary"]')).toBeFalsy();
+    expect(srsServiceSpy.getDeckSummary).not.toHaveBeenCalled();
+  });
+
+  it('renders the memorized and toRevisit counts as plain numbers', async () => {
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+    srsServiceSpy.getDeckSummary.mockResolvedValueOnce({
+      memorizedCount: 12,
+      toRevisitCount: 4,
+      lastStudiedAt: null,
+      nextStudyAvailable: true,
+      nextStudyDueDate: null,
+    });
+    fixture.componentRef.setInput('actions', ['study']);
+
+    await selectFirstLeague();
+
+    const text = fixture.nativeElement.querySelector('[data-testid="study-summary"]').textContent;
+    expect(text).toContain('12');
+    expect(text).toContain('4');
+  });
+
+  it('labels lastStudiedAt as "Nunca" when the deck was never studied', async () => {
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+    srsServiceSpy.getDeckSummary.mockResolvedValueOnce({
+      memorizedCount: 0,
+      toRevisitCount: 3,
+      lastStudiedAt: null,
+      nextStudyAvailable: true,
+      nextStudyDueDate: null,
+    });
+    fixture.componentRef.setInput('actions', ['study']);
+
+    await selectFirstLeague();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="study-summary"]').textContent).toContain('Nunca');
+  });
+
+  it('labels nextStudy as "Agora" when nextStudyAvailable is true, and as days-out otherwise', async () => {
+    deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+    srsServiceSpy.getDeckSummary.mockResolvedValueOnce({
+      memorizedCount: 0,
+      toRevisitCount: 0,
+      lastStudiedAt: null,
+      nextStudyAvailable: false,
+      nextStudyDueDate: addDays(today(), 3),
+    });
+    fixture.componentRef.setInput('actions', ['study']);
+
+    await selectFirstLeague();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="study-summary"]').textContent).toContain('Em 3 dias');
   });
 });

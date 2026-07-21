@@ -9,6 +9,8 @@ import CheckmarkCircle02Icon from '@hugeicons/core-free-icons/CheckmarkCircle02I
 import { ImportService } from '../../core/data/import.service';
 import { DeckService } from '../../core/decks/deck.service';
 import { LeagueService } from '../../core/leagues/league.service';
+import { SrsService, DeckStudySummary } from '../../core/srs/srs.service';
+import { today, daysBetween } from '../../core/srs/level';
 import { countryOptions, leaguesForCountry, countryFlag, CountryOption } from '../../core/leagues/league-catalog';
 import { LEAGUES_TO_IMPORT, LeagueImportConfig } from '../../core/data/league-import.config';
 import { Deck } from '../../core/models/deck.model';
@@ -30,6 +32,7 @@ export class LeaguePicker {
   private importService = inject(ImportService);
   private deckService = inject(DeckService);
   private leagueService = inject(LeagueService);
+  private srsService = inject(SrsService);
   private route = inject(ActivatedRoute);
 
   // Bound from route `data.actions`/`data.title` via withComponentInputBinding()
@@ -49,6 +52,7 @@ export class LeaguePicker {
   readonly selectedCountry = signal<string | null>(null);
   readonly importingId = signal<string | null>(null);
   readonly error = signal<string | null>(null);
+  readonly studySummary = signal<DeckStudySummary | null>(null);
 
   readonly Home01Icon = Home01Icon;
   readonly Book01Icon = Book01Icon;
@@ -74,6 +78,15 @@ export class LeaguePicker {
     effect(() => {
       this.importService.progress();
       void this.refreshDecks();
+    });
+
+    effect(() => {
+      const deck = this.selectedDeck();
+      if (!deck || !this.showsAction('study')) {
+        this.studySummary.set(null);
+        return;
+      }
+      void this.loadStudySummary(deck.id);
     });
   }
 
@@ -142,6 +155,24 @@ export class LeaguePicker {
     const selectedConfig = this.selected();
     if (!selectedConfig) return undefined;
     return this.deckForLeague(selectedConfig.externalId);
+  }
+
+  private async loadStudySummary(deckId: string) {
+    this.studySummary.set(await this.srsService.getDeckSummary(deckId));
+  }
+
+  lastStudiedLabel(iso: string | null): string {
+    if (!iso) return 'Nunca';
+    const days = daysBetween(iso.slice(0, 10), today());
+    if (days <= 0) return 'Hoje';
+    if (days === 1) return 'Ontem';
+    return `Há ${days} dias`;
+  }
+
+  nextStudyLabel(summary: DeckStudySummary): string {
+    if (summary.nextStudyAvailable) return 'Agora';
+    const days = summary.nextStudyDueDate ? daysBetween(today(), summary.nextStudyDueDate) : 0;
+    return `Em ${days} dias`;
   }
 
   async selectLeague(config: LeagueImportConfig) {

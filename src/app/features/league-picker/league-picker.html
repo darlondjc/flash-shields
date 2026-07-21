@@ -107,6 +107,27 @@
           <span class="league-card__flag" [attr.aria-label]="selectedConfig.country">{{ countryFlag(selectedConfig.country) }}</span>
         </div>
 
+        @if (showsAction('study') && studySummary(); as summary) {
+          <div class="stat-row" data-testid="study-summary">
+            <div class="stat-chip">
+              <span class="stat-chip__value">{{ summary.memorizedCount }}</span>
+              <span class="stat-chip__label">Memorizados</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-chip__value">{{ summary.toRevisitCount }}</span>
+              <span class="stat-chip__label">A revisitar</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-chip__value">{{ lastStudiedLabel(summary.lastStudiedAt) }}</span>
+              <span class="stat-chip__label">Último estudo</span>
+            </div>
+            <div class="stat-chip">
+              <span class="stat-chip__value">{{ nextStudyLabel(summary) }}</span>
+              <span class="stat-chip__label">Próximo estudo</span>
+            </div>
+          </div>
+        }
+
         @if (selectedDeck(); as deck) {
           <div class="league-card__actions">
             @if (showsAction('study')) {
