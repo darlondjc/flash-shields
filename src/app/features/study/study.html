@@ -62,7 +62,8 @@
     <section class="card empty-state">
       <p class="empty-state__title">Sessão concluída.</p>
       <p class="empty-state__subtitle">Você revisou todos os cartões de hoje.</p>
-      <button type="button" class="btn btn--primary" (click)="back()">Voltar</button>
+      <button type="button" class="btn btn--primary" data-testid="start-extra" (click)="store.startExtra()">Nova sessão extra</button>
+      <button type="button" class="btn btn--ghost" (click)="backToLeague()">Voltar</button>
     </section>
   }
 </main>

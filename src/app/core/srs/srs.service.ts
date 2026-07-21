@@ -55,6 +55,32 @@ export class SrsService {
     return teams.filter((team): team is Team => !!team);
   }
 
+  async buildExtraQueue(deckId: string): Promise<Team[]> {
+    const deck = await this.deckService.getDeck(deckId);
+    if (!deck) return [];
+
+    const currentDate = today();
+    const allStates = await this.db.reviewStates.where('deckId').equals(deckId).toArray();
+    const existingTeamIds = new Set(allStates.map(state => state.teamId));
+
+    const newTeamIds = deck.teamIds.filter(teamId => !existingTeamIds.has(teamId));
+    for (const teamId of newTeamIds) {
+      const state: StoredReviewState = {
+        id: `${deckId}:${teamId}`,
+        teamId,
+        deckId,
+        level: 0,
+        dueDate: currentDate,
+        lapses: 0,
+        suspended: false,
+      };
+      await this.db.reviewStates.put(state);
+    }
+
+    const teams = await this.db.teams.bulkGet(shuffle(deck.teamIds));
+    return teams.filter((team): team is Team => !!team);
+  }
+
   async grade(deckId: string, teamId: string, grade: ReviewGrade): Promise<number> {
     const id = `${deckId}:${teamId}`;
     const state = await this.db.reviewStates.get(id);

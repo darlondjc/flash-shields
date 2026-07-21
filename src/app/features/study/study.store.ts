@@ -33,6 +33,17 @@ export class StudyStore {
     this.startedAt.set(new Date().toISOString());
   }
 
+  async startExtra() {
+    const deckId = this.deckId();
+    if (!deckId) return;
+    const queue = await this.srs.buildExtraQueue(deckId);
+    this.queue.set(queue);
+    this.total.set(queue.length);
+    this.revealed.set(false);
+    this.answers.set([]);
+    this.startedAt.set(new Date().toISOString());
+  }
+
   reveal() {
     this.revealed.set(true);
     this.revealedAt = Date.now();

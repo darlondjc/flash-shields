@@ -20,11 +20,11 @@ function makeTeam(id: string): Team {
 
 describe('StudyStore', () => {
   let store: StudyStore;
-  let srsSpy: { buildDailyQueue: ReturnType<typeof vi.fn>; grade: ReturnType<typeof vi.fn> };
+  let srsSpy: { buildDailyQueue: ReturnType<typeof vi.fn>; buildExtraQueue: ReturnType<typeof vi.fn>; grade: ReturnType<typeof vi.fn> };
   let sessionServiceSpy: { finish: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
-    srsSpy = { buildDailyQueue: vi.fn(), grade: vi.fn() };
+    srsSpy = { buildDailyQueue: vi.fn(), buildExtraQueue: vi.fn(), grade: vi.fn() };
     sessionServiceSpy = { finish: vi.fn().mockResolvedValue(undefined) };
     TestBed.configureTestingModule({
       providers: [
@@ -136,5 +136,35 @@ describe('StudyStore', () => {
       { teamId: 'ts-2', correct: true },
       { teamId: 'ts-1', correct: true },
     ]);
+  });
+
+  it('startExtra() loads the extra queue for the already-loaded deck', async () => {
+    srsSpy.buildDailyQueue.mockResolvedValue([]);
+    srsSpy.buildExtraQueue.mockResolvedValue([makeTeam('ts-1'), makeTeam('ts-2')]);
+    await store.load('deck-1');
+
+    await store.startExtra();
+
+    expect(srsSpy.buildExtraQueue).toHaveBeenCalledWith('deck-1');
+    expect(store.current()?.id).toBe('ts-1');
+    expect(store.remaining()).toBe(2);
+    expect(store.revealed()).toBe(false);
+  });
+
+  it('startExtra() resets answers so a prior session does not leak into the new one', async () => {
+    srsSpy.buildDailyQueue.mockResolvedValue([makeTeam('ts-1')]);
+    srsSpy.grade.mockResolvedValue(1);
+    await store.load('deck-1');
+    store.reveal();
+    await store.grade('acertou'); // finishes the daily session, records one answer
+
+    srsSpy.buildExtraQueue.mockResolvedValue([makeTeam('ts-2')]);
+    srsSpy.grade.mockResolvedValue(1);
+    await store.startExtra();
+    store.reveal();
+    await store.grade('facil');
+
+    const answers = sessionServiceSpy.finish.mock.calls[1][2];
+    expect(answers).toEqual([expect.objectContaining({ teamId: 'ts-2', correct: true })]);
   });
 });
