@@ -40,21 +40,21 @@
 
     @if (store.revealed()) {
       <div class="grade-row">
-        <button type="button" class="grade-btn grade-btn--red" (click)="store.grade(0)">
+        <button type="button" class="grade-btn grade-btn--red" (click)="store.grade('errei')">
           <span>Errei</span>
-          <span class="grade-btn__key" aria-hidden="true">0</span>
+          <span class="grade-btn__key" aria-hidden="true">1</span>
         </button>
-        <button type="button" class="grade-btn grade-btn--orange" (click)="store.grade(3)">
+        <button type="button" class="grade-btn grade-btn--orange" (click)="store.grade('dificil')">
           <span>Difícil</span>
+          <span class="grade-btn__key" aria-hidden="true">2</span>
+        </button>
+        <button type="button" class="grade-btn grade-btn--green" (click)="store.grade('acertou')">
+          <span>Bom</span>
           <span class="grade-btn__key" aria-hidden="true">3</span>
         </button>
-        <button type="button" class="grade-btn grade-btn--green" (click)="store.grade(4)">
-          <span>Bom</span>
-          <span class="grade-btn__key" aria-hidden="true">4</span>
-        </button>
-        <button type="button" class="grade-btn grade-btn--blue" (click)="store.grade(5)">
+        <button type="button" class="grade-btn grade-btn--blue" (click)="store.grade('facil')">
           <span>Fácil</span>
-          <span class="grade-btn__key" aria-hidden="true">5</span>
+          <span class="grade-btn__key" aria-hidden="true">4</span>
         </button>
       </div>
     }

@@ -4,7 +4,7 @@ import { SrsService } from './srs.service';
 import { DbService } from '../persistence/db.service';
 import { DeckService } from '../decks/deck.service';
 import { Team } from '../models/team.model';
-import { today, addDays } from './sm2';
+import { today, addDays } from './level';
 
 function makeTeam(id: string): Team {
   return {
@@ -50,11 +50,11 @@ describe('SrsService', () => {
     expect(queue.map(t => t.id).sort()).toEqual(['ts-1', 'ts-2', 'ts-3']);
   });
 
-  it('persists a fresh, due ReviewState for each new card it queues', async () => {
+  it('persists a fresh, due ReviewState at level 0 for each new card it queues', async () => {
     await service.buildDailyQueue(deckId);
     const state = await db.reviewStates.get(`${deckId}:ts-1`);
     expect(state).toBeDefined();
-    expect(state?.repetitions).toBe(0);
+    expect(state?.level).toBe(0);
     expect(state?.dueDate).toBe(today());
   });
 
@@ -67,21 +67,23 @@ describe('SrsService', () => {
     expect(queue.map(t => t.id)).not.toContain('ts-1');
   });
 
-  it('grade() applies SM-2 and persists the updated state', async () => {
+  it('grade() applies the level engine, returns the resulting level, and persists it', async () => {
     await service.buildDailyQueue(deckId);
-    await service.grade(deckId, 'ts-1', 4);
+    const level = await service.grade(deckId, 'ts-1', 'acertou');
 
+    expect(level).toBe(1);
     const state = await db.reviewStates.get(`${deckId}:ts-1`);
-    expect(state?.repetitions).toBe(1);
+    expect(state?.level).toBe(1);
     expect(state?.dueDate).toBe(addDays(today(), 1));
   });
 
-  it('re-queues a card due today after grading it as a fail', async () => {
+  it('re-queues a card for today and counts a lapse after grading it "errei"', async () => {
     await service.buildDailyQueue(deckId);
-    await service.grade(deckId, 'ts-1', 0);
+    const level = await service.grade(deckId, 'ts-1', 'errei');
 
+    expect(level).toBe(0);
     const state = await db.reviewStates.get(`${deckId}:ts-1`);
-    expect(state?.dueDate).toBe(addDays(today(), 1));
+    expect(state?.dueDate).toBe(today());
     expect(state?.lapses).toBe(1);
   });
 

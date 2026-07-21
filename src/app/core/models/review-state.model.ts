@@ -1,11 +1,9 @@
-export type ReviewQuality = 0 | 3 | 4 | 5;
+export type ReviewGrade = 'errei' | 'dificil' | 'acertou' | 'facil';
 
 export interface ReviewState {
   teamId: string;
   deckId: string;
-  repetitions: number;
-  easeFactor: number;
-  intervalDays: number;
+  level: number;
   dueDate: string;
   lastReviewed?: string;
   lapses: number;

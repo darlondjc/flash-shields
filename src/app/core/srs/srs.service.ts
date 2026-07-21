@@ -2,8 +2,8 @@ import { Injectable, inject } from '@angular/core';
 import { DbService, StoredReviewState } from '../persistence/db.service';
 import { DeckService } from '../decks/deck.service';
 import { Team } from '../models/team.model';
-import { ReviewQuality } from '../models/review-state.model';
-import { applySm2, today } from './sm2';
+import { ReviewGrade } from '../models/review-state.model';
+import { applyLevelGrade, today } from './level';
 import { NEW_CARDS_PER_DAY } from './srs.constants';
 import { shuffle } from '../util/random.util';
 
@@ -34,9 +34,7 @@ export class SrsService {
         id: `${deckId}:${teamId}`,
         teamId,
         deckId,
-        repetitions: 0,
-        easeFactor: 2.5,
-        intervalDays: 0,
+        level: 0,
         dueDate: currentDate,
         lapses: 0,
         suspended: false,
@@ -49,13 +47,14 @@ export class SrsService {
     return teams.filter((team): team is Team => !!team);
   }
 
-  async grade(deckId: string, teamId: string, quality: ReviewQuality): Promise<void> {
+  async grade(deckId: string, teamId: string, grade: ReviewGrade): Promise<number> {
     const id = `${deckId}:${teamId}`;
     const state = await this.db.reviewStates.get(id);
     if (!state) throw new Error(`ReviewState not found for ${id}`);
 
     const { id: _stateId, ...reviewState } = state;
-    const updated = applySm2(reviewState, quality);
+    const updated = applyLevelGrade(reviewState, grade);
     await this.db.reviewStates.put({ ...updated, id });
+    return updated.level;
   }
 }
