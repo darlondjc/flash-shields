@@ -1,4 +1,4 @@
-export type GameMode = 'multiple-choice' | 'reverse';
+export type GameMode = 'multiple-choice' | 'reverse' | 'study';
 
 export interface SessionAnswer {
   // The tested/prompted team (the flashcard being asked about), not the team the user clicked.

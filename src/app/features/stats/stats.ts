@@ -43,6 +43,8 @@ export class Stats {
         return 'Múltipla escolha';
       case 'reverse':
         return 'Reverso';
+      case 'study':
+        return 'Estudo';
     }
   }
 }
