@@ -71,13 +71,25 @@
               <span class="league-card__flag" [attr.aria-label]="config.country">{{ countryFlag(config.country) }}</span>
             </div>
             <div class="league-card__footer">
-              @if (config.comingSoon) {
-                <span class="pill">Em breve</span>
-              } @else if (leagueDeck) {
-                <span class="pill pill--success">Pronta para jogar</span>
-              } @else {
-                <span class="pill">Ainda não importada</span>
-              }
+              <div class="league-card__badges">
+                @if (config.comingSoon) {
+                  <span class="pill">Em breve</span>
+                } @else if (leagueDeck) {
+                  <span class="pill">Importado</span>
+                } @else {
+                  <span class="pill pill--warning">Ainda não importada</span>
+                }
+                @if (showsAction('study') && leagueDeck && studySummaries().get(leagueDeck.id); as summary) {
+                  @let status = studyStatus(summary);
+                  <span
+                    class="pill"
+                    [class.pill--info]="status.variant === 'info'"
+                    [class.pill--warning]="status.variant === 'warning'"
+                    [class.pill--success]="status.variant === 'success'"
+                    data-testid="study-status-chip"
+                  >{{ status.text }}</span>
+                }
+              </div>
               <span class="league-card__cta" [attr.aria-label]="config.comingSoon ? 'Em breve' : (importingId() === config.externalId ? 'Importando' : 'Selecionar')">
                 @if (config.comingSoon) {
                   <span>Em breve</span>

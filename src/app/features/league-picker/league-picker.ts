@@ -52,7 +52,7 @@ export class LeaguePicker {
   readonly selectedCountry = signal<string | null>(null);
   readonly importingId = signal<string | null>(null);
   readonly error = signal<string | null>(null);
-  readonly studySummary = signal<DeckStudySummary | null>(null);
+  readonly studySummaries = signal<Map<string, DeckStudySummary>>(new Map());
 
   readonly Home01Icon = Home01Icon;
   readonly Book01Icon = Book01Icon;
@@ -78,15 +78,6 @@ export class LeaguePicker {
     effect(() => {
       this.importService.progress();
       void this.refreshDecks();
-    });
-
-    effect(() => {
-      const deck = this.selectedDeck();
-      if (!deck || !this.showsAction('study')) {
-        this.studySummary.set(null);
-        return;
-      }
-      void this.loadStudySummary(deck.id);
     });
   }
 
@@ -157,9 +148,10 @@ export class LeaguePicker {
     return this.deckForLeague(selectedConfig.externalId);
   }
 
-  private async loadStudySummary(deckId: string) {
-    this.studySummary.set(await this.srsService.getDeckSummary(deckId));
-  }
+  readonly studySummary = computed(() => {
+    const deck = this.selectedDeck();
+    return deck ? (this.studySummaries().get(deck.id) ?? null) : null;
+  });
 
   lastStudiedLabel(iso: string | null): string {
     if (!iso) return 'Nunca';
@@ -172,7 +164,13 @@ export class LeaguePicker {
   nextStudyLabel(summary: DeckStudySummary): string {
     if (summary.nextStudyAvailable) return 'Agora';
     const days = summary.nextStudyDueDate ? daysBetween(today(), summary.nextStudyDueDate) : 0;
-    return `Em ${days} dias`;
+    return `Em ${days} ${days === 1 ? 'dia' : 'dias'}`;
+  }
+
+  studyStatus(summary: DeckStudySummary): { text: string; variant: 'info' | 'warning' | 'success' } {
+    if (!summary.lastStudiedAt) return { text: 'Novo', variant: 'info' };
+    if (summary.nextStudyAvailable) return { text: 'Pronto pra estudar', variant: 'warning' };
+    return { text: 'Estudado', variant: 'success' };
   }
 
   async selectLeague(config: LeagueImportConfig) {
@@ -217,6 +215,18 @@ export class LeaguePicker {
   private async refreshDecks() {
     this.decks.set(await this.deckService.listDecks());
     await this.refreshLeagues();
+    await this.refreshStudySummaries();
+  }
+
+  private async refreshStudySummaries() {
+    if (!this.showsAction('study')) {
+      this.studySummaries.set(new Map());
+      return;
+    }
+    const entries = await Promise.all(
+      this.decks().map(async deck => [deck.id, await this.srsService.getDeckSummary(deck.id)] as const),
+    );
+    this.studySummaries.set(new Map(entries));
   }
 
   private async refreshLeagues() {

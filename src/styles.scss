@@ -396,6 +396,13 @@ button {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+.league-card__badges {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -410,6 +417,16 @@ button {
 .pill--success {
   background: var(--accent-dim);
   color: var(--accent);
+}
+
+.pill--info {
+  background: var(--blue-dim);
+  color: var(--blue);
+}
+
+.pill--warning {
+  background: var(--orange-dim);
+  color: var(--orange);
 }
 
 .league-card__cta {

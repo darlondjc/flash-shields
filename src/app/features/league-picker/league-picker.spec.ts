@@ -53,6 +53,15 @@ describe('LeaguePicker', () => {
     fixture.detectChanges();
   }
 
+  // Fica na lista de ligas do país (sem selecionar uma liga específica),
+  // pra inspecionar o chip de status que aparece em cada card da lista.
+  async function goToLeagueList() {
+    await settle();
+    fixture.nativeElement.querySelector('[data-testid="select-country"]').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
   beforeEach(async () => {
     importSpy = { importLeague: vi.fn().mockResolvedValue(league), progress: signal(null) };
     deckServiceSpy = {
@@ -243,5 +252,79 @@ describe('LeaguePicker', () => {
     await selectFirstLeague();
 
     expect(fixture.nativeElement.querySelector('[data-testid="study-summary"]').textContent).toContain('Em 3 dias');
+  });
+
+  describe('study status chip in the league list', () => {
+    it('shows "Novo" for an imported league that was never studied', async () => {
+      deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+      srsServiceSpy.getDeckSummary.mockResolvedValueOnce({
+        memorizedCount: 0,
+        toRevisitCount: 1,
+        lastStudiedAt: null,
+        nextStudyAvailable: true,
+        nextStudyDueDate: null,
+      });
+      fixture.componentRef.setInput('actions', ['study']);
+
+      await goToLeagueList();
+
+      const chip = fixture.nativeElement.querySelector('[data-testid="study-status-chip"]');
+      expect(chip.textContent.trim()).toBe('Novo');
+      expect(chip.classList.contains('pill--info')).toBe(true);
+    });
+
+    it('shows "Pronto pra estudar" for a studied league with cards due again', async () => {
+      deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+      srsServiceSpy.getDeckSummary.mockResolvedValueOnce({
+        memorizedCount: 2,
+        toRevisitCount: 1,
+        lastStudiedAt: '2026-07-01T10:00:00.000Z',
+        nextStudyAvailable: true,
+        nextStudyDueDate: null,
+      });
+      fixture.componentRef.setInput('actions', ['study']);
+
+      await goToLeagueList();
+
+      const chip = fixture.nativeElement.querySelector('[data-testid="study-status-chip"]');
+      expect(chip.textContent.trim()).toBe('Pronto pra estudar');
+      expect(chip.classList.contains('pill--warning')).toBe(true);
+    });
+
+    it('shows "Estudado" when nothing is due right now', async () => {
+      deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+      srsServiceSpy.getDeckSummary.mockResolvedValueOnce({
+        memorizedCount: 3,
+        toRevisitCount: 0,
+        lastStudiedAt: '2026-07-20T10:00:00.000Z',
+        nextStudyAvailable: false,
+        nextStudyDueDate: addDays(today(), 3),
+      });
+      fixture.componentRef.setInput('actions', ['study']);
+
+      await goToLeagueList();
+
+      const chip = fixture.nativeElement.querySelector('[data-testid="study-status-chip"]');
+      expect(chip.textContent.trim()).toBe('Estudado');
+      expect(chip.classList.contains('pill--success')).toBe(true);
+    });
+
+    it('shows no chip for a league that has not been imported yet', async () => {
+      fixture.componentRef.setInput('actions', ['study']);
+
+      await goToLeagueList();
+
+      expect(fixture.nativeElement.querySelector('[data-testid="study-status-chip"]')).toBeFalsy();
+    });
+
+    it('shows no chip at all on /jogos, even for an imported league', async () => {
+      deckServiceSpy.listDecks.mockResolvedValueOnce([newDeck]);
+      fixture.componentRef.setInput('actions', ['play', 'reverse']);
+
+      await goToLeagueList();
+
+      expect(fixture.nativeElement.querySelector('[data-testid="study-status-chip"]')).toBeFalsy();
+      expect(srsServiceSpy.getDeckSummary).not.toHaveBeenCalled();
+    });
   });
 });
