@@ -105,43 +105,83 @@ def detect_text_polygons(img_bgr, langs=("en",), gpu=False,
 # --------------------------------------------------------------------------- #
 # Máscara
 # --------------------------------------------------------------------------- #
-def build_mask(img_bgr, polys, dilate=3, refine=True, k_colors=6,
+def build_mask(img_bgr, polys, dilate=3, refine=True,
                max_glyph_frac=0.12, min_area=25, keep=None,
-               min_refine_coverage=0.15):
+               min_refine_coverage=0.15, max_stroke=4, max_solid_frac=0.3,
+               k_colors=6):
     """Máscara binária (255 = apagar).
 
     A caixa que o detector devolve para texto em ARCO é enorme (engloba anéis e
     o miolo do escudo). Por isso ela é usada apenas como "região-dica": dentro
-    dela, quantizo as cores e fico só com os componentes conexos pequenos e
-    isolados — as letras. Anéis e estrela viram componentes gigantes e são
-    descartados pelo filtro de tamanho.
+    dela, fico só com os componentes conexos pequenos e isolados — as letras.
+    Anéis e estrela viram componentes gigantes e são descartados pelo filtro
+    de tamanho.
+
+    O fallback pra "caixa inteira" (ver `_glyph_components`) é decidido POR
+    POLÍGONO, não numa cobertura agregada de todos juntos. Escudo com nome em
+    duas linhas de peso bem diferente (ex: West Bromwich Albion: "WEST
+    BROMWICH" fino embaixo de "ALBION" bem mais grosso) tem uma região onde o
+    refino funciona bem e outra onde ele corretamente rejeita quase tudo (a
+    região do "ALBION" é grossa demais, cai fora do critério de espessura).
+    Numa cobertura agregada, a região ruim puxa a média toda pra baixo do
+    limiar e um "caixa inteira" apaga também a região que estava sendo bem
+    resolvida junto -- foi exatamente isso que aconteceu testando essa
+    mudança antes de separar por região.
     """
     h, w = img_bgr.shape[:2]
 
-    hint = np.zeros((h, w), np.uint8)
-    for p in polys:
-        cv2.fillPoly(hint, [p], 255)
-
-    # A caixa do arco inferior costuma atravessar o escudo inteiro e engolir o
-    # monograma central. Não há como a máquina saber que o monograma é a marca
-    # e não texto a remover -- isso é decisão do usuário.
-    for (x0, y0, x1, y1) in keep or []:
-        hint[y0:y1, x0:x1] = 0
+    def clip_keep(m):
+        for (x0, y0, x1, y1) in keep or []:
+            m[y0:y1, x0:x1] = 0
+        return m
 
     if not refine:
-        mask = hint
+        mask = np.zeros((h, w), np.uint8)
+        for p in polys:
+            cv2.fillPoly(mask, [p], 255)
+        mask = clip_keep(mask)
     else:
-        mask = _glyph_components(img_bgr, hint, k_colors, max_glyph_frac, min_area)
-        # Fontes grandes (ex: "FCA", "DBU") às vezes têm letra mais alta que
-        # o limite tolerado -- sobra só uma franja de fragmentos de
-        # anti-aliasing, pior que não ter refinado nada (mancha feia + texto
-        # ainda exposto). Se o refino não cobriu uma fração mínima da
-        # região-dica, é sinal de que ele não conseguiu isolar os glifos --
-        # cai pra caixa inteira, que ao menos remove o texto de forma limpa.
-        if mask.sum() < min_refine_coverage * hint.sum():
-            print("[i] refino não achou glifos o bastante, usando a caixa inteira.",
-                  file=sys.stderr)
-            mask = hint
+        labels = _kmeans_labels(img_bgr, k_colors)
+        max_height = max_glyph_frac * max(w, h)
+        mask = np.zeros((h, w), np.uint8)
+        for p in polys:
+            # A caixa do arco inferior costuma atravessar o escudo inteiro e
+            # engolir o monograma central. Não há como a máquina saber que o
+            # monograma é a marca e não texto a remover -- isso é decisão do
+            # usuário.
+            region_hint = np.zeros((h, w), np.uint8)
+            cv2.fillPoly(region_hint, [p], 255)
+            region_hint = clip_keep(region_hint)
+            if region_hint.sum() == 0:
+                continue
+
+            region_mask = _glyph_components(img_bgr, region_hint, labels, k_colors,
+                                            max_glyph_frac, min_area, max_stroke,
+                                            max_solid_frac)
+            # Fontes grandes numa caixa PEQUENA (ex: "FCA", "DBU" -- uma
+            # linha só, altura da própria letra) às vezes têm letra mais alta
+            # que o limite tolerado -- sobra só uma franja de fragmentos de
+            # anti-aliasing, pior que não ter refinado nada. Aí sim cai pra
+            # caixa inteira, que ao menos remove o texto de forma limpa.
+            #
+            # Mas isso só vale pra caixa PEQUENA. Numa caixa já grande (bbox
+            # de arco inflado pela curvatura, ou uma região que por acidente
+            # de detecção engoliu o monograma/emblema junto com o texto), uma
+            # cobertura baixa é o SINAL DE QUE O REFINO FUNCIONOU -- a região
+            # contém bastante coisa que não é letra por natureza (o
+            # monograma do QPR, o navio do Manchester), e pintar a caixa
+            # inteira aí destrói exatamente o que a etapa de refino
+            # conseguiu preservar corretamente. `bh` do próprio polígono
+            # (calculado igual ao filtro de altura usado componente a
+            # componente) decide qual dos dois casos é esse.
+            ys = p[:, 1]
+            region_bh = ys.max() - ys.min()
+            fits_fallback = region_bh <= max_height
+            if fits_fallback and region_mask.sum() < min_refine_coverage * region_hint.sum():
+                print("[i] refino não achou glifos o bastante numa região "
+                      "pequena, usando a caixa inteira dela.", file=sys.stderr)
+                region_mask = region_hint
+            mask = cv2.bitwise_or(mask, region_mask)
 
     if dilate > 0:
         k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * dilate + 1,) * 2)
@@ -149,44 +189,67 @@ def build_mask(img_bgr, polys, dilate=3, refine=True, k_colors=6,
     return mask
 
 
-def _glyph_components(img_bgr, hint, k_colors, max_glyph_frac, min_area):
-    """Componentes conexos pequenos dentro da região-dica = letras.
+def _kmeans_labels(img_bgr, k_colors):
+    h, w = img_bgr.shape[:2]
+    Z = img_bgr.reshape(-1, 3).astype(np.float32)
+    crit = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
+    _, labels, _ = cv2.kmeans(Z, k_colors, None, crit, 3, cv2.KMEANS_PP_CENTERS)
+    return labels.reshape(h, w)
 
-    Filtra por ALTURA, não pelo maior lado: um bloco de letras grossas coladas
-    (ex: "FCA") é largo mas baixo -- descartá-lo pela largura o eliminaria por
-    inteiro. Anéis, estrelas e outros elementos do brasão tendem a ser tão
-    altos quanto largos, então o filtro de altura sozinho já os exclui bem.
 
-    O limite é uma fração fixa da imagem inteira, NÃO relativo à altura da
-    região-dica de cada polígono (já tentado e revertido): pra texto em ARCO,
-    a caixa delimitadora do polígono é inflada pela curvatura em si (o "M" no
-    canto esquerdo do arco e o "R" no direito ficam bem mais alto/baixo um do
-    outro que a altura real da letra), não pelo tamanho da fonte -- confiar
-    nessa altura "abriu a porta" pra componentes grandes vizinhos (ex: o
-    emblema do navio do Manchester City) passarem como se fossem glifo. Fontes
-    retas genuinamente grandes (ex: "FCA") que excedem esse limite fixo caem
-    pro fallback de "caixa inteira" em build_mask() -- ok pra texto reto, já
-    que a caixa não fica desproporcional como fica pra texto em arco.
+def _glyph_components(img_bgr, hint, labels, k_colors, max_glyph_frac, min_area,
+                      max_stroke, max_solid_frac):
+    """Componentes conexos pequenos e FINOS dentro da região-dica = letras.
+
+    Dois critérios, não um só:
+
+    1. COR (k-means na imagem inteira, como antes) pra achar os blobs --
+       preserva o preenchimento inteiro da letra mesmo em fonte grossa
+       (ex: "MANCHESTER"), o que uma máscara puramente por espessura perde
+       (erosão/abertura só engole traço mais fino que o elemento estruturante;
+       testado à parte, "MANCHESTER" tem preenchimento mais largo que
+       "UNITED" no mesmo escudo e ficava só com a casca das letras).
+
+    2. ESPESSURA (razão de área que sobrevive à erosão) pra decidir se cada
+       blob de cor é letra ou não -- é o que faltava antes: sem isso, o navio
+       do escudo do Manchester (amarelo sobre vermelho, mesma cor do texto)
+       cai no mesmo cluster de cor da letra e some junto. Um blob comprido e
+       fino (letra) perde a maior parte da área na erosão; um blob compacto
+       (navio, anel, estrela) perde pouco, porque não estreita em nenhuma
+       direção. `max_solid_frac` é o quanto pode sobrar pra ainda contar
+       como letra.
+
+    Filtra por ALTURA, não pelo maior lado: um bloco de letras grossas
+    coladas (ex: "FCA") é largo mas baixo -- descartá-lo pela largura o
+    eliminaria por inteiro.
+
+    O limite de altura é uma fração fixa da imagem inteira, NÃO relativo à
+    altura da região-dica de cada polígono (já tentado e revertido): pra
+    texto em ARCO, a caixa delimitadora do polígono é inflada pela curvatura
+    em si (o "M" no canto esquerdo do arco e o "R" no direito ficam bem mais
+    alto/baixo um do outro que a altura real da letra), não pelo tamanho da
+    fonte -- confiar nessa altura abriria a porta pra componentes grandes
+    vizinhos passarem como se fossem glifo. Fontes retas genuinamente
+    grandes (ex: "FCA") que excedem esse limite fixo caem pro fallback de
+    "caixa inteira" em build_mask() -- ok pra texto reto, já que a caixa não
+    fica desproporcional como fica pra texto em arco.
     """
     h, w = img_bgr.shape[:2]
     max_height = max_glyph_frac * max(w, h)
 
-    Z = img_bgr.reshape(-1, 3).astype(np.float32)
-    crit = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 20, 1.0)
-    _, labels, _ = cv2.kmeans(Z, k_colors, None, crit, 3, cv2.KMEANS_PP_CENTERS)
-    labels = labels.reshape(h, w)
+    erosion_k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * max_stroke + 1,) * 2)
 
     out = np.zeros((h, w), np.uint8)
-    for k in range(k_colors):
-        m = (labels == k).astype(np.uint8)
-        n, lab, stats, cent = cv2.connectedComponentsWithStats(m, 8)
+    for kk in range(k_colors):
+        color_mask = ((labels == kk) & (hint > 0)).astype(np.uint8)
+        n, lab, stats, _ = cv2.connectedComponentsWithStats(color_mask, 8)
         for i in range(1, n):
             x, y, bw, bh, area = stats[i]
             if area < min_area:            continue   # respingo de antialias
-            if bh > max_height:             continue   # anel, estrela, moldura
-            cx = min(int(cent[i][0]), w - 1)
-            cy = min(int(cent[i][1]), h - 1)
-            if hint[cy, cx] == 0:          continue   # fora da região de texto
+            if bh > max_height:            continue   # anel, estrela, moldura
+            comp = (lab == i).astype(np.uint8)
+            solid_frac = cv2.erode(comp, erosion_k).sum() / area
+            if solid_frac > max_solid_frac:  continue  # sobra grosso demais -- não é traço
             out[lab == i] = 255
 
     out = _absorb_antialias(img_bgr, out)
@@ -218,9 +281,27 @@ def _absorb_antialias(img_bgr, seed, grow=3, tol=28):
 # Inpainting
 # --------------------------------------------------------------------------- #
 def inpaint_lama(img_bgr, mask):
+    import torch
     from simple_lama_inpainting import SimpleLama
     from PIL import Image
-    lama = SimpleLama()
+
+    if torch.cuda.is_available():
+        lama = SimpleLama()
+    else:
+        # simple-lama-inpainting chama torch.jit.load(model_path) sem
+        # map_location, e o checkpoint (big-lama.pt) foi salvo com tensores
+        # em CUDA. Numa wheel CPU-only isso quebra no PRÓPRIO carregamento
+        # (antes até do model.to(device) rodar) com "could not run
+        # aten::empty_strided... CUDA backend" -- sem esse patch o engine
+        # "lama"/"auto" nunca funciona nesse tipo de máquina e cai pro cv
+        # silenciosamente (inpaint() abaixo engole a exceção no modo auto).
+        _orig_load = torch.jit.load
+        torch.jit.load = lambda f, *a, **kw: _orig_load(f, map_location=torch.device("cpu"))
+        try:
+            lama = SimpleLama()
+        finally:
+            torch.jit.load = _orig_load
+
     rgb = Image.fromarray(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB))
     out = lama(rgb, Image.fromarray(mask))
     return cv2.cvtColor(np.array(out.convert("RGB")), cv2.COLOR_RGB2BGR)
@@ -274,6 +355,7 @@ def process(path_in, path_out, args):
         return 0
 
     mask = build_mask(img, polys, dilate=args.dilate, refine=not args.no_refine,
+                      max_stroke=args.max_stroke, max_solid_frac=args.max_solid_frac,
                       k_colors=args.colors, keep=args.keep)
     if alpha is not None:
         mask = cv2.bitwise_and(mask, mask, mask=(alpha > 0).astype(np.uint8) * 255)
@@ -321,6 +403,12 @@ def main():
     ap.add_argument("--keep", action="append", type=lambda v: tuple(map(int, v.split(","))),
                     metavar="X0,Y0,X1,Y1",
                     help="região a PRESERVAR (ex: monograma central). Repetível.")
+    ap.add_argument("--max-stroke", type=int, default=4,
+                    help="raio de erosão pra medir espessura, em px (default 4)")
+    ap.add_argument("--max-solid-frac", type=float, default=0.3,
+                    help="fração da área que pode sobreviver à erosão e ainda "
+                         "contar como letra -- maior deixa passar blob mais "
+                         "grosso (default 0.3)")
     ap.add_argument("--colors", type=int, default=6,
                     help="nº de cores da paleta do escudo (k-means)")
     ap.add_argument("--no-refine", action="store_true",

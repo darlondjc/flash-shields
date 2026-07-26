@@ -155,7 +155,18 @@ async function generate(flags) {
       const outputPath = join(tmpdir(), `game-badge-out-${team.id}.png`);
       writeFileSync(inputPath, badge);
 
-      const raw = execFileSync(PYTHON_BIN, [DETECT_SCRIPT, inputPath, '-o', outputPath], { encoding: 'utf8' });
+      // --engine cv fixo por enquanto: o LaMa (rede neural) às vezes deixa
+      // fantasma de letra em vez de terminar de apagar (visto no escudo do
+      // Manchester United e do West Bromwich Albion, testando em lote) --
+      // pior que o cv2 clássico nesses casos, mesmo sendo mais "sofisticado".
+      // Ainda não investigado por quê; suspeita é que a máscara nova (traços
+      // finos e fragmentados por letra, em vez de um blob só) joga contra um
+      // modelo treinado em foto com textura contínua.
+      const raw = execFileSync(
+        PYTHON_BIN,
+        [DETECT_SCRIPT, inputPath, '-o', outputPath, '--engine', 'cv'],
+        { encoding: 'utf8' },
+      );
       const { regionsFound } = JSON.parse(raw.trim().split('\n').pop());
 
       if (regionsFound === 0) {
